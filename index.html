@@ -592,31 +592,32 @@ select option { background: var(--surface); }
               <option value="stop">Stop execution</option>
             </select>
           </div>
-          <div class="field" style="display: inline-flex; align-items: center; position: relative;">
+          <div class="field" style="display:flex;align-items:center;position:relative;width:max-content;">
             <label style="visibility:hidden">_</label>
-            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;text-transform:none;font-weight:500;font-size:12px;letter-spacing:0;">
+            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;text-transform:none;font-weight:500;font-size:12px;letter-spacing:0;margin:0;">
               <input type="checkbox" id="cfgDry" style="width:auto;accent-color:var(--blue);">
               Dry run mode
             </label>
-            <span title="Validates data with Aria without saving changes. No records will be created or modified."
-                  style="display:flex;
-                  justify-content:center;
-                  align-items:center;
-                  width:15px;
-                  height:15px;
-                  background-color:#a0a0a0;
-                  color:white;
-                  border-radius:50%;
-                  font-size:11px;
-                  font-family:'Georgia', serif;
-                  font-style:italic;
-                  font-weight:bold;
-                  line-height:0;
-                  cursor:help;
-                  position:absolute;
-                  right:-18px;
-                  top:-4px;
-                  user-select:none;">i</span>
+            <span
+    title="Validates data with Aria without saving changes. No records will be created or modified."
+    style="
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      width:15px;
+      height:15px;
+      background-color:#a0a0a0;
+      color:white;
+      border-radius:50%;
+      font-size:11px;
+      font-family:'Georgia', serif;
+      font-style:italic;
+      font-weight:bold;
+      cursor:pointer;
+      user-select:none;
+      margin-left:4px;
+      transform:translateY(-6px);
+      flex-shrink:0;">i</span>
           </div>
         </div>
       </div>
