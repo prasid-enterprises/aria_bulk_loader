@@ -777,6 +777,7 @@ const S = {
   stop: false,
   logN: 0,
 };
+const PROXY_URL = "https://aria-proxy.ariabulkloader.workers.dev";
 
 // ═══════════════════════════════════════════════════════════════
 // NAV
@@ -1303,7 +1304,7 @@ async function startRun() {
   const timeout  = parseInt(document.getElementById('cfgTimeout').value)||30000;
   const concurr  = parseInt(document.getElementById('cfgConcurrency').value)||3;
   const idCols   = getSelectedIds();
-
+  
   if (!endpoint) { toast('Enter endpoint URL','error'); goPage(0); return; }
   if (!apiName)  { toast('Enter API name','error'); goPage(0); return; }
   const rows = S.sheets[S.sheet]||[];
@@ -1399,7 +1400,7 @@ async function execRow(row, rowIndex, apiName, endpoint, maxRetries, timeout, dr
       if (att>0) { await sleep(Math.min(1000*2**(att-1)+Math.random()*300,15000)); }
       const ctrl=new AbortController();
       const tmr=setTimeout(()=>ctrl.abort(),timeout);
-      const res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:ctrl.signal});
+      const res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json',"x-target-url": endpoint},body:JSON.stringify(body),signal:ctrl.signal});
       clearTimeout(tmr);
       let data; try{data=await res.json();}catch(e){data={raw:await res.text()};}
 
