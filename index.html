@@ -5,431 +5,501 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Aria Bulk Loader</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-
-/* ─── TOKENS ─── */
 :root {
-  --bg:             #eef2f7;
-  --surface:        #ffffff;
-  --surface2:       #f5f8fc;
-  --surface3:       #eaeff6;
-  --border:         #ccd6e4;
-  --border-strong:  #b0bfcf;
-  --focus:          #1a6bc4;
-  --blue-900:       #0a2545;
-  --blue-800:       #0d3b7a;
-  --blue-700:       #1051a8;
-  --blue:           #1a6bc4;
-  --blue-light:     #ddeaf8;
-  --blue-xlight:    #eef4fc;
-  --text:           #111827;
-  --text-mid:       #374151;
-  --text-light:     #6b7280;
-  --text-xlight:    #9ca3af;
-  --ok:             #15803d;
-  --ok-bg:          #f0fdf4;
-  --ok-border:      #86efac;
-  --err:            #b91c1c;
-  --err-bg:         #fef2f2;
-  --err-border:     #fca5a5;
-  --warn:           #a16207;
-  --warn-bg:        #fefce8;
-  --warn-border:    #fde047;
-  --purple:         #6d28d9;
-  --purple-bg:      #f5f3ff;
-  --mono:           'JetBrains Mono', 'Fira Mono', monospace;
-  --sans:           'Inter', system-ui, sans-serif;
-  --r:              5px;
-  --sh:             0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
-  --sh-md:          0 4px 14px rgba(0,0,0,.10);
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface2: #1c2128;
+  --surface3: #21262d;
+  --border: #30363d;
+  --border-2: #484f58;
+  --accent: #58a6ff;
+  --accent-2: #1f6feb;
+  --accent-dim: #1f3a5c;
+  --text: #e6edf3;
+  --text-mid: #8b949e;
+  --text-dim: #484f58;
+  --ok: #3fb950;
+  --ok-bg: #0d1f12;
+  --ok-border: #238636;
+  --err: #f85149;
+  --err-bg: #1f0d0d;
+  --err-border: #6e2a27;
+  --warn: #d29922;
+  --warn-bg: #1f1a0d;
+  --warn-border: #6e5510;
+  --purple: #bc8cff;
+  --purple-bg: #1a1030;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'IBM Plex Sans', system-ui, sans-serif;
+  --r: 6px;
+  --r-lg: 10px;
+  --editor-bg: #0d1117;
+  --editor-text: #c9d1d9;
+  --editor-placeholder: #30363d;
+  --console-bg: #010409;
 }
 
-/* ─── RESET ─── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { height: 100%; }
-body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 13px; line-height: 1.5; display: flex; flex-direction: column; overflow: hidden; }
+/* ── LIGHT MODE ── */
+body.light {
+  --bg: #f6f8fa;
+  --surface: #ffffff;
+  --surface2: #f0f2f5;
+  --surface3: #e8ecf0;
+  --border: #d0d7de;
+  --border-2: #b0bbc6;
+  --accent: #0969da;
+  --accent-2: #0550ae;
+  --accent-dim: #dbeafe;
+  --text: #1f2328;
+  --text-mid: #57606a;
+  --text-dim: #b0bbc6;
+  --ok: #1a7f37;
+  --ok-bg: #dafbe1;
+  --ok-border: #82e09a;
+  --err: #cf222e;
+  --err-bg: #fff0ee;
+  --err-border: #ffcecb;
+  --warn: #9a6700;
+  --warn-bg: #fff8c5;
+  --warn-border: #d4a72c;
+  --purple: #8250df;
+  --purple-bg: #fbefff;
+  --editor-bg: #f6f8fa;
+  --editor-text: #1f2328;
+  --editor-placeholder: #b0bbc6;
+  --console-bg: #1b1f24;
+}
 
-/* ─── SCROLLBAR ─── */
+/* ── THEME TOGGLE SWITCH ── */
+.theme-toggle {
+  display: flex; align-items: center; gap: 7px;
+  cursor: pointer; user-select: none;
+}
+.theme-toggle-label {
+  font-size: 10px; font-weight: 600; color: var(--text-mid);
+  font-family: var(--mono); letter-spacing: .05em; transition: color .2s;
+}
+.toggle-track {
+  width: 36px; height: 20px;
+  background: var(--surface3); border: 1px solid var(--border);
+  border-radius: 10px; position: relative;
+  transition: background .2s, border-color .2s; flex-shrink: 0;
+}
+.toggle-track.on { background: var(--accent-2); border-color: var(--accent); }
+.toggle-thumb {
+  width: 14px; height: 14px; background: var(--text-mid);
+  border-radius: 50%; position: absolute; top: 2px; left: 2px;
+  transition: transform .2s, background .2s;
+}
+.toggle-track.on .toggle-thumb { transform: translateX(16px); background: #fff; }
+.toggle-icon { font-size: 13px; line-height: 1; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: var(--sans); font-size: 13px; line-height: 1.5;
+  display: flex; flex-direction: column;
+}
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
+::-webkit-scrollbar-thumb:hover { background: var(--border-2); }
 
-/* ─── HEADER ─── */
-.header {
-  height: 48px; flex-shrink: 0;
-  background: var(--blue-900);
-  display: flex; align-items: center; padding: 0 18px; gap: 12px;
+/* ── HEADER ── */
+.hdr {
+  height: 46px; flex-shrink: 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 16px; gap: 12px;
 }
-.logo-sq {
-  width: 28px; height: 28px; background: var(--blue);
+.hdr-logo {
+  display: flex; align-items: center; gap: 8px;
+}
+.hdr-logo-mark {
+  width: 26px; height: 26px;
+  background: linear-gradient(135deg, var(--accent-2), var(--accent));
+  border-radius: 5px;
   display: grid; place-items: center;
-  font-family: var(--mono); font-weight: 700; font-size: 10px; color: #fff;
-  border-radius: 3px; flex-shrink: 0;
+  font-family: var(--mono); font-size: 9px; font-weight: 600; color: #fff;
 }
-.logo-label { font-family: var(--mono); font-size: 12px; color: #fff; letter-spacing: .07em; }
-.logo-label b { color: #93c5fd; font-weight: 700; }
+.hdr-logo-text {
+  font-family: var(--mono); font-size: 12px; font-weight: 600;
+  color: var(--text); letter-spacing: 0.08em;
+}
+.hdr-logo-text span { color: var(--accent); }
 .hdr-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
-.status-chip {
+.status-badge {
   display: flex; align-items: center; gap: 6px;
+  background: var(--surface2); border: 1px solid var(--border);
   padding: 3px 10px; border-radius: 20px;
-  font-size: 10px; font-weight: 600; font-family: var(--mono);
-  background: rgba(255,255,255,.07); color: #94a3b8; letter-spacing: .05em;
+  font-family: var(--mono); font-size: 10px; color: var(--text-mid);
+  letter-spacing: 0.05em;
 }
-.sdot { width: 6px; height: 6px; border-radius: 50%; background: #475569; flex-shrink: 0; }
-.sdot.running { background: #4ade80; animation: blink 1.1s infinite; }
-.sdot.done    { background: #60a5fa; }
-.sdot.error   { background: #f87171; }
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+.sdot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-dim); }
+.sdot.running { background: var(--ok); animation: pulse 1.1s infinite; }
+.sdot.done { background: var(--accent); }
+.sdot.error { background: var(--err); }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
 
-/* ─── NAV TABS ─── */
+/* ── NAV ── */
 .nav {
   flex-shrink: 0;
-  background: var(--blue-800);
-  display: flex; padding: 0 18px;
-  border-bottom: 1px solid rgba(255,255,255,.08);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex; padding: 0 16px; gap: 2px;
 }
 .ntab {
-  padding: 9px 16px; cursor: pointer; font-size: 12px; font-weight: 500;
-  color: #93a3b8; border-bottom: 2px solid transparent; margin-bottom: -1px;
-  transition: color .12s, border-color .12s; display: flex; align-items: center; gap: 6px;
+  padding: 10px 14px; cursor: pointer;
+  font-size: 12px; font-weight: 500;
+  color: var(--text-mid);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color .12s, border-color .12s;
+  display: flex; align-items: center; gap: 6px;
   white-space: nowrap;
 }
-.ntab:hover { color: #c7d8f0; }
-.ntab.on { color: #93c5fd; border-bottom-color: #93c5fd; }
+.ntab:hover { color: var(--text); }
+.ntab.on { color: var(--accent); border-bottom-color: var(--accent); }
+.ntab-ico { font-size: 13px; }
 .nbadge {
-  background: rgba(255,255,255,.1); color: #93c5fd;
-  font-size: 9px; padding: 1px 5px; border-radius: 8px; font-family: var(--mono);
+  background: var(--surface3); color: var(--text-mid);
+  font-size: 9px; padding: 1px 5px; border-radius: 8px;
+  font-family: var(--mono);
 }
-.ntab.on .nbadge { background: #1a6bc4; color: #fff; }
+.ntab.on .nbadge { background: var(--accent-dim); color: var(--accent); }
 
-/* ─── PAGE CONTAINER ─── */
+/* ── PAGES ── */
 .pages { flex: 1; overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
 .page { display: none; flex: 1; overflow: hidden; flex-direction: column; min-height: 0; }
 .page.on { display: flex; }
 
-/* ─── SHARED FORM ELEMENTS ─── */
-.field { display: flex; flex-direction: column; gap: 3px; }
+/* ── SHARED FORM ── */
+.field { display: flex; flex-direction: column; gap: 4px; }
 .field > label {
-  font-size: 10px; font-weight: 700; color: var(--text-light);
-  letter-spacing: .06em; text-transform: uppercase;
+  font-size: 10px; font-weight: 600; color: var(--text-mid);
+  letter-spacing: .07em; text-transform: uppercase;
 }
 input[type=text], input[type=number], input[type=url], select, textarea {
-  background: var(--surface); border: 1px solid var(--border);
+  background: var(--surface2); border: 1px solid var(--border);
   color: var(--text); font-family: var(--sans); font-size: 13px;
-  padding: 7px 10px; border-radius: var(--r); outline: none;
-  transition: border-color .13s, box-shadow .13s; width: 100%;
+  padding: 7px 10px; border-radius: var(--r); outline: none; width: 100%;
+  transition: border-color .13s, box-shadow .13s;
 }
 input:focus, select:focus, textarea:focus {
-  border-color: var(--focus);
-  box-shadow: 0 0 0 3px rgba(26,107,196,.12);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(88,166,255,.1);
 }
-input::placeholder, textarea::placeholder { color: var(--text-xlight); }
-select option { background: var(--surface); }
+input::placeholder, textarea::placeholder { color: var(--text-dim); }
+select option { background: var(--surface2); }
 
-/* Multi-select identifier list */
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 7px 13px; border-radius: var(--r); font-size: 12px;
+  font-weight: 500; cursor: pointer; border: none;
+  transition: all .13s; white-space: nowrap;
+  font-family: var(--sans); line-height: 1;
+}
+.btn-primary { background: var(--accent-2); color: #fff; border: 1px solid var(--accent); }
+.btn-primary:hover:not(:disabled) { background: var(--accent); }
+.btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+.btn-green { background: var(--ok-bg); color: var(--ok); border: 1px solid var(--ok-border); }
+.btn-green:hover:not(:disabled) { background: rgba(63,185,80,.15); }
+.btn-green:disabled { opacity: .4; cursor: not-allowed; }
+.btn-ghost { background: transparent; color: var(--text-mid); border: 1px solid var(--border); }
+.btn-ghost:hover:not(:disabled) { background: var(--surface3); color: var(--text); border-color: var(--border-2); }
+.btn-outline { background: transparent; color: var(--accent); border: 1px solid var(--accent-dim); }
+.btn-outline:hover:not(:disabled) { background: var(--accent-dim); }
+.btn-outline:disabled { opacity: .4; cursor: not-allowed; }
+.btn-danger { background: transparent; color: var(--err); border: 1px solid var(--err-border); }
+.btn-danger:hover:not(:disabled) { background: var(--err-bg); }
+.btn-sm { padding: 5px 10px; font-size: 11px; }
+.btn-xs { padding: 3px 8px; font-size: 10px; }
+.btn-block { width: 100%; justify-content: center; }
+
+/* ── DROP ZONE ── */
+.dropzone {
+  border: 2px dashed var(--border); border-radius: var(--r);
+  padding: 20px 14px; text-align: center; cursor: pointer;
+  background: var(--surface2); transition: all .13s; position: relative;
+}
+.dropzone:hover, .dropzone.over { border-color: var(--accent); background: var(--accent-dim); }
+.dropzone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.dz-icon { font-size: 24px; display: block; margin-bottom: 6px; }
+.dz-hint { font-size: 11px; color: var(--text-mid); line-height: 1.8; }
+.dz-hint b { color: var(--accent); }
+.dz-badge {
+  margin-top: 8px; display: inline-flex; align-items: center; gap: 6px;
+  background: var(--ok-bg); border: 1px solid var(--ok-border);
+  border-radius: 20px; padding: 3px 10px;
+  font-size: 11px; color: var(--ok); font-weight: 500;
+}
+.dz-clear-btn {
+  background: transparent; border: none; cursor: pointer;
+  color: var(--err); font-size: 12px; padding: 0 2px;
+  line-height: 1; display: inline-flex; align-items: center;
+}
+
+/* ── CARD ── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+}
+.card-head {
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--surface2); border-radius: var(--r-lg) var(--r-lg) 0 0;
+}
+.card-title {
+  font-size: 11px; font-weight: 600; color: var(--text);
+  display: flex; align-items: center; gap: 6px;
+}
+.card-body { padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+
+/* ── GRID ── */
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+/* ── SECTION LABEL ── */
+.slabel {
+  font-size: 10px; font-weight: 600; color: var(--text-mid);
+  text-transform: uppercase; letter-spacing: .1em;
+  display: flex; align-items: center; gap: 8px;
+}
+.slabel::after { content:''; flex:1; height:1px; background:var(--border); }
+
+/* ══════════════════════════════════════════
+   PAGE 0 — CONFIGURE
+══════════════════════════════════════════ */
+.p0 {
+  flex: 1; overflow: hidden; display: grid;
+  grid-template-columns: 270px 1fr;
+  min-height: 0;
+}
+.p0-left {
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+  background: var(--surface);
+}
+.p0-left-scroll { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+.p0-left-foot { padding: 12px 14px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; }
+.p0-right { overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 14px; background: var(--bg); }
+
+/* Saved configs */
+.cfg-item {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 9px 10px; border: 1px solid var(--border);
+  border-radius: var(--r); cursor: pointer;
+  background: var(--surface2); transition: all .12s;
+}
+.cfg-item:hover { border-color: var(--accent); }
+.cfg-item.active { border-color: var(--accent); background: var(--accent-dim); }
+.cfg-name { font-size: 12px; font-weight: 600; color: var(--text); }
+.cfg-meta { font-size: 10px; color: var(--text-mid); margin-top: 2px; }
+
+/* Checklist */
 .id-checklist {
-  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
-  max-height: 130px; overflow-y: auto; padding: 4px 0;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--r); max-height: 120px; overflow-y: auto; padding: 4px 0;
 }
 .id-check-item {
   display: flex; align-items: center; gap: 8px;
   padding: 5px 10px; cursor: pointer; transition: background .1s;
 }
-.id-check-item:hover { background: var(--blue-xlight); }
-.id-check-item input[type=checkbox] { width: auto; accent-color: var(--blue); }
-.id-check-item label { cursor: pointer; font-size: 12px; color: var(--text); font-family: var(--mono); }
+.id-check-item:hover { background: var(--surface3); }
+.id-check-item input[type=checkbox] { width: auto; accent-color: var(--accent); flex-shrink: 0; }
 
-/* ─── BUTTONS ─── */
-.btn {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 7px 13px; border-radius: var(--r); font-size: 12px;
-  font-weight: 600; cursor: pointer; border: none; transition: all .13s;
-  white-space: nowrap; font-family: var(--sans); line-height: 1;
-}
-.btn-primary { background: var(--blue); color: #fff; }
-.btn-primary:hover:not(:disabled) { background: var(--blue-700); }
-.btn-primary:disabled { background: #93b8de; cursor: not-allowed; color: #ddeaf8; }
-.btn-green { background: var(--ok); color: #fff; }
-.btn-green:hover:not(:disabled) { background: #166534; }
-.btn-green:disabled { background: #86efac; cursor: not-allowed; color: #fff; }
-.btn-outline { background: transparent; color: var(--blue); border: 1px solid var(--blue); }
-.btn-outline:hover { background: var(--blue-light); }
-.btn-ghost { background: transparent; color: var(--text-mid); border: 1px solid var(--border); }
-.btn-ghost:hover { background: var(--surface3); border-color: var(--border-strong); }
-.btn-danger { background: transparent; color: var(--err); border: 1px solid var(--err-border); }
-.btn-danger:hover { background: var(--err-bg); }
-.btn-sm { padding: 5px 10px; font-size: 11px; }
-.btn-xs { padding: 3px 7px; font-size: 10px; }
-.btn-block { width: 100%; justify-content: center; }
-
-/* ─── DROP ZONE ─── */
-.dropzone {
-  border: 2px dashed var(--border); border-radius: var(--r);
-  padding: 18px 14px; text-align: center; cursor: pointer;
-  background: var(--surface2); transition: all .13s; position: relative;
-}
-.dropzone:hover, .dropzone.over { border-color: var(--blue); background: var(--blue-light); }
-.dropzone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
-.dz-icon { font-size: 22px; display: block; margin-bottom: 5px; }
-.dz-hint { font-size: 11px; color: var(--text-light); line-height: 1.7; }
-.dz-hint b { color: var(--blue); }
-.filetag {
-  display: inline-flex; align-items: center; gap: 5px; margin-top: 7px;
-  padding: 3px 9px; background: var(--ok-bg); border: 1px solid var(--ok-border);
-  border-radius: 20px; font-size: 11px; color: var(--ok); font-weight: 500;
-}
-
-/* ─── CARD ─── */
-.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); box-shadow: var(--sh); }
-.card-head {
-  padding: 10px 14px; border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: space-between;
-  background: var(--surface2); border-radius: var(--r) var(--r) 0 0;
-}
-.card-title { font-size: 11px; font-weight: 700; color: var(--text); letter-spacing: .02em; }
-.card-body { padding: 12px 14px; }
-
-/* ─── SECTION LABEL ─── */
-.slabel {
-  font-size: 10px; font-weight: 700; color: var(--text-light);
-  text-transform: uppercase; letter-spacing: .1em;
-  display: flex; align-items: center; gap: 8px;
-}
-.slabel::after { content:''; flex: 1; height: 1px; background: var(--border); }
-
-/* ═══════════════════════════════════════
-   PAGE 0 — CONFIGURE
-═══════════════════════════════════════ */
-.p0 {
-  flex: 1; overflow: hidden; display: grid;
-  grid-template-columns: 280px 1fr;
-  min-height: 0;
-}
-.p0-left {
-  border-right: 1px solid var(--border);
-  background: var(--surface2);
-  display: flex; flex-direction: column; overflow: hidden;
-}
-.p0-left-scroll { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
-.p0-left-foot { padding: 12px 14px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
-
-.p0-right { overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
-
-.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-
-/* Saved config items */
-.cfg-item {
-  display: flex; align-items: flex-start; gap: 8px;
-  padding: 9px 10px; border: 1px solid var(--border);
-  border-radius: var(--r); background: var(--surface); cursor: pointer;
-  transition: all .12s;
-}
-.cfg-item:hover { border-color: var(--blue); background: var(--blue-xlight); }
-.cfg-item.active { border-color: var(--blue); background: var(--blue-light); }
-.cfg-name { font-size: 12px; font-weight: 600; color: var(--text); }
-.cfg-meta { font-size: 10px; color: var(--text-light); margin-top: 2px; }
-.cfg-acts { display: flex; gap: 4px; flex-shrink: 0; margin-left: auto; }
-
-/* ═══════════════════════════════════════
+/* ══════════════════════════════════════════
    PAGE 1 — PAYLOAD & MAPPER
-═══════════════════════════════════════ */
+══════════════════════════════════════════ */
 .p1 {
   flex: 1; overflow: hidden; display: grid;
-  grid-template-columns: 1fr 1fr;
-  min-height: 0;
+  grid-template-columns: 1fr 1fr; min-height: 0;
 }
 .p1-left {
   border-right: 1px solid var(--border);
-  display: flex; flex-direction: column; overflow: hidden; min-height: 0;
+  display: flex; flex-direction: column; overflow: hidden;
 }
-.p1-right { display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+.p1-right { display: flex; flex-direction: column; overflow: hidden; }
 
 .panel-bar {
   padding: 8px 12px; border-bottom: 1px solid var(--border);
   display: flex; align-items: center; gap: 8px; flex-shrink: 0;
-  background: var(--surface2);
+  background: var(--surface);
 }
-.panel-title { font-size: 11px; font-weight: 700; color: var(--text); flex: 1; }
+.panel-title { font-size: 11px; font-weight: 600; color: var(--text); flex: 1; }
 
-/* JSON editor — fills all remaining space */
+/* JSON editor */
 .json-wrap { flex: 1; overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
 .json-editor {
   flex: 1; width: 100%; resize: none; border: none; outline: none;
-  background: #16213e; color: #cdd6f4;
-  font-family: var(--mono); font-size: 12.5px; line-height: 1.75;
-  padding: 14px 16px;
-  tab-size: 2; min-height: 0;
+  background: var(--editor-bg); color: var(--editor-text);
+  font-family: var(--mono); font-size: 12.5px; line-height: 1.8;
+  padding: 14px 16px; tab-size: 2; min-height: 0;
 }
-.json-editor::placeholder { color: #455069; }
+.json-editor::placeholder { color: var(--editor-placeholder); }
 .json-footer {
   padding: 5px 12px; border-top: 1px solid var(--border);
   display: flex; align-items: center; justify-content: space-between;
-  background: var(--surface2); flex-shrink: 0;
+  background: var(--surface); flex-shrink: 0;
 }
 .json-footer span { font-family: var(--mono); font-size: 10px; }
 .txt-ok   { color: var(--ok); }
 .txt-err  { color: var(--err); }
-.txt-dim  { color: var(--text-light); }
+.txt-dim  { color: var(--text-mid); }
 
-/* Mapper table */
+/* Mapper */
 .mapper-scroll { flex: 1; overflow-y: auto; min-height: 0; }
 .mp-table { width: 100%; border-collapse: collapse; }
 .mp-table th {
-  padding: 7px 11px; text-align: left; font-size: 10px; font-weight: 700;
-  color: var(--text-light); text-transform: uppercase; letter-spacing: .07em;
-  background: var(--surface2); border-bottom: 1px solid var(--border);
+  padding: 7px 11px; text-align: left; font-size: 10px; font-weight: 600;
+  color: var(--text-mid); text-transform: uppercase; letter-spacing: .07em;
+  background: var(--surface); border-bottom: 1px solid var(--border);
   position: sticky; top: 0; z-index: 2; white-space: nowrap;
 }
 .mp-table td { padding: 6px 8px; border-bottom: 1px solid var(--surface3); vertical-align: middle; }
-.mp-table tr:hover td { background: var(--blue-xlight); }
-
+.mp-table tr:hover td { background: var(--surface2); }
 .var-chip {
   display: inline-flex; align-items: center;
   font-family: var(--mono); font-size: 11px; font-weight: 500;
   color: var(--purple); background: var(--purple-bg);
-  padding: 2px 7px; border-radius: 4px; gap: 1px;
+  padding: 2px 7px; border-radius: 4px;
 }
-.brace { color: #9ca3af; font-size: 10px; }
-
+.brace { color: var(--text-dim); font-size: 10px; }
 .arr-grp-hd {
-  padding: 5px 10px; background: #fffbeb; border-top: 1px solid var(--warn-border);
+  padding: 5px 10px;
+  background: var(--warn-bg); border-top: 1px solid var(--warn-border);
   border-bottom: 1px solid var(--warn-border);
   display: flex; align-items: center; gap: 8px;
-  font-size: 10px; font-weight: 700; color: var(--warn);
+  font-size: 10px; font-weight: 600; color: var(--warn);
 }
 .arr-badge {
-  background: var(--warn-bg); border: 1px solid var(--warn-border);
-  color: var(--warn); font-size: 9px; font-weight: 700;
+  background: var(--surface2); border: 1px solid var(--warn-border);
+  color: var(--warn); font-size: 9px; font-weight: 600;
   padding: 1px 6px; border-radius: 3px; font-family: var(--mono);
 }
-.arr-row td { background: #fffef5; }
-
+.arr-row td { background: rgba(210,153,34,.04); }
 .src-toggle { display: flex; }
 .src-toggle button {
-  padding: 4px 8px; font-size: 10px; font-weight: 600; cursor: pointer;
-  border: 1px solid var(--border); background: var(--surface); color: var(--text-mid);
+  padding: 4px 8px; font-size: 10px; font-weight: 500; cursor: pointer;
+  border: 1px solid var(--border); background: var(--surface2); color: var(--text-mid);
   transition: all .1s; line-height: 1;
 }
 .src-toggle button:first-child { border-radius: 4px 0 0 4px; }
 .src-toggle button:last-child   { border-radius: 0 4px 4px 0; border-left: none; }
-.src-toggle button.on { background: var(--blue); color: #fff; border-color: var(--blue); }
-
+.src-toggle button.on { background: var(--accent-2); color: #fff; border-color: var(--accent); }
 .map-sel {
   width: 100%; font-size: 11px; font-family: var(--sans);
   border: 1px solid var(--border); border-radius: 4px;
-  padding: 4px 6px; background: var(--surface); color: var(--text); outline: none;
+  padding: 4px 6px; background: var(--surface2); color: var(--text); outline: none;
 }
-.map-sel:focus { border-color: var(--focus); }
+.map-sel:focus { border-color: var(--accent); }
 .map-const-in {
   width: 100%; font-size: 11px; font-family: var(--mono);
   border: 1px solid var(--warn-border); border-radius: 4px;
   padding: 4px 6px; background: var(--warn-bg); color: var(--warn); outline: none;
 }
 .map-const-in:focus { border-color: var(--warn); }
-
-.mdot { width: 7px; height: 7px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
-.mdot.col   { background: var(--blue); }
+.mdot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-dim); flex-shrink: 0; }
+.mdot.col   { background: var(--accent); }
 .mdot.const { background: var(--warn); }
 
-/* ═══════════════════════════════════════
+/* ══════════════════════════════════════════
    PAGE 2 — EXECUTE & RESULTS
-═══════════════════════════════════════ */
+══════════════════════════════════════════ */
 .p2 { flex: 1; overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
-
 .run-bar {
   padding: 8px 14px; border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
-  background: var(--surface); flex-wrap: wrap;
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface); flex-shrink: 0; flex-wrap: wrap;
 }
 .run-bar-right { margin-left: auto; display: flex; gap: 7px; flex-wrap: wrap; }
-
 .stats-row {
   display: flex; border-bottom: 1px solid var(--border);
   background: var(--surface); flex-shrink: 0; flex-wrap: wrap;
 }
 .sbox {
   padding: 10px 18px; border-right: 1px solid var(--border);
-  display: flex; flex-direction: column; gap: 1px; min-width: 80px;
+  display: flex; flex-direction: column; gap: 1px; min-width: 85px;
 }
-.sval { font-family: var(--mono); font-size: 20px; font-weight: 700; line-height: 1; }
-.sval.blue  { color: var(--blue-800); }
+.sval { font-family: var(--mono); font-size: 20px; font-weight: 600; line-height: 1; }
+.sval.blue  { color: var(--accent); }
 .sval.green { color: var(--ok); }
 .sval.red   { color: var(--err); }
 .sval.warn  { color: var(--warn); }
-.slbl { font-size: 10px; color: var(--text-light); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
-
-.id-boxes { padding: 8px 18px; border-right: 1px solid var(--border); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.slbl { font-size: 10px; color: var(--text-mid); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; margin-top: 3px; }
+.id-boxes {
+  padding: 8px 18px; border-right: 1px solid var(--border);
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+}
 .id-tag {
   display: inline-flex; align-items: center; gap: 4px;
-  padding: 2px 8px; background: var(--blue-light); border: 1px solid #a8c8ef;
-  border-radius: 10px; font-size: 10px; color: var(--blue-800); font-weight: 600; font-family: var(--mono);
+  padding: 2px 8px; background: var(--accent-dim);
+  border: 1px solid var(--accent); border-radius: 10px;
+  font-size: 10px; color: var(--accent); font-weight: 500; font-family: var(--mono);
 }
-
 .prog-wrap {
   padding: 6px 14px; border-bottom: 1px solid var(--border);
   background: var(--surface2); display: none; flex-shrink: 0;
 }
 .prog-wrap.show { display: block; }
-.prog-track { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
-.prog-fill { height: 100%; background: var(--blue); border-radius: 3px; transition: width .3s; width: 0; }
+.prog-track { height: 4px; background: var(--surface3); border-radius: 3px; overflow: hidden; }
+.prog-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width .3s; width: 0; }
 .prog-labels { display: flex; justify-content: space-between; margin-top: 4px;
-  font-size: 10px; color: var(--text-light); font-family: var(--mono); }
+  font-size: 10px; color: var(--text-mid); font-family: var(--mono); }
 
 /* Inner tabs */
-.itabs { display: flex; border-bottom: 1px solid var(--border); background: var(--surface2); flex-shrink: 0; }
+.itabs { display: flex; border-bottom: 1px solid var(--border); background: var(--surface); flex-shrink: 0; }
 .itab {
-  padding: 7px 15px; font-size: 11px; font-weight: 500; cursor: pointer;
-  color: var(--text-light); border-bottom: 2px solid transparent;
-  transition: all .12s; display: flex; align-items: center; gap: 5px;
-  margin-bottom: -1px;
+  padding: 8px 15px; font-size: 11px; font-weight: 500; cursor: pointer;
+  color: var(--text-mid); border-bottom: 2px solid transparent;
+  transition: all .12s; display: flex; align-items: center; gap: 5px; margin-bottom: -1px;
 }
 .itab:hover { color: var(--text); }
-.itab.on { color: var(--blue); border-bottom-color: var(--blue); }
+.itab.on { color: var(--accent); border-bottom-color: var(--accent); }
 .ibdg {
-  background: var(--surface3); color: var(--text-light);
+  background: var(--surface3); color: var(--text-mid);
   font-size: 9px; padding: 1px 5px; border-radius: 7px; font-family: var(--mono);
 }
-.itab.on .ibdg { background: var(--blue-light); color: var(--blue); }
-
+.itab.on .ibdg { background: var(--accent-dim); color: var(--accent); }
 .ipane { display: none; flex: 1; flex-direction: column; overflow: hidden; min-height: 0; }
 .ipane.on { display: flex; }
 
 /* Console */
 .console-body {
   flex: 1; overflow-y: auto; padding: 10px 14px;
-  background: #0f172a; font-family: var(--mono); font-size: 11.5px; line-height: 1.85;
+  background: var(--console-bg); font-family: var(--mono); font-size: 11.5px; line-height: 1.85;
   min-height: 0;
 }
-.lr { display: grid; grid-template-columns: 66px 42px 1fr; gap: 10px; padding: 1px 0; border-bottom: 1px solid rgba(255,255,255,.03); }
-.lt { color: #334155; font-size: 10px; padding-top: 1px; }
-.ll { font-size: 9px; font-weight: 800; letter-spacing: .04em; }
-.ll.INFO { color: #60a5fa; } .ll.OK { color: #4ade80; }
-.ll.WARN { color: #facc15; } .ll.ERR { color: #f87171; }
-.ll.DBG  { color: #475569; }
-.lm { color: #94a3b8; word-break: break-all; }
+.lr { display: grid; grid-template-columns: 66px 42px 1fr; gap: 10px; padding: 1px 0; border-bottom: 1px solid rgba(255,255,255,.02); }
+.lt { color: #30363d; font-size: 10px; padding-top: 1px; }
+.ll { font-size: 9px; font-weight: 700; letter-spacing: .04em; }
+.ll.INFO { color: #58a6ff; } .ll.OK { color: #3fb950; }
+.ll.WARN { color: #d29922; } .ll.ERR { color: #f85149; }
+.ll.DBG  { color: #484f58; }
+.lm { color: #8b949e; word-break: break-all; }
 
-/* Results table */
+/* Results */
 .res-toolbar {
   padding: 7px 12px; border-bottom: 1px solid var(--border);
   display: flex; align-items: center; gap: 7px; flex-shrink: 0;
-  background: var(--surface2); flex-wrap: wrap;
+  background: var(--surface); flex-wrap: wrap;
 }
 .res-wrap { flex: 1; overflow: auto; min-height: 0; }
 .res-table { width: 100%; border-collapse: collapse; font-size: 12px; }
 .res-table thead { position: sticky; top: 0; z-index: 3; }
 .res-table th {
-  padding: 8px 11px; text-align: left; font-size: 10px; font-weight: 700;
-  color: var(--text-light); text-transform: uppercase; letter-spacing: .07em;
-  background: var(--surface2); border-bottom: 2px solid var(--border); white-space: nowrap;
+  padding: 8px 11px; text-align: left; font-size: 10px; font-weight: 600;
+  color: var(--text-mid); text-transform: uppercase; letter-spacing: .07em;
+  background: var(--surface); border-bottom: 2px solid var(--border); white-space: nowrap;
 }
 .res-table td { padding: 7px 11px; border-bottom: 1px solid var(--surface3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 230px; }
-.res-table tr:hover td { background: var(--blue-xlight); }
+.res-table tr:hover td { background: var(--surface2); }
 .res-table td.mono { font-family: var(--mono); font-size: 11px; }
-
-.pill { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 9px; }
+.pill { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 9px; }
 .pill-S { background: var(--ok-bg);   color: var(--ok);   border: 1px solid var(--ok-border); }
 .pill-F { background: var(--err-bg);  color: var(--err);  border: 1px solid var(--err-border); }
 .pill-V { background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn-border); }
@@ -437,86 +507,126 @@ select option { background: var(--surface); }
 /* Payload preview */
 .pay-pre {
   flex: 1; overflow: auto; padding: 14px 16px;
-  background: #16213e; font-family: var(--mono); font-size: 12px;
-  line-height: 1.75; color: #cdd6f4; white-space: pre-wrap;
+  background: var(--editor-bg); font-family: var(--mono); font-size: 12px;
+  line-height: 1.75; color: var(--editor-text); white-space: pre-wrap;
   word-break: break-word; min-height: 0;
 }
 
-/* ─── MODAL ─── */
-.modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 900; display: none; align-items: center; justify-content: center; }
+/* ── MODAL ── */
+.modal-bg {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.6);
+  backdrop-filter: blur(2px);
+  z-index: 900; display: none; align-items: center; justify-content: center;
+}
 .modal-bg.open { display: flex; }
-.modal { background: var(--surface); border-radius: 8px; box-shadow: var(--sh-md); width: 440px; max-width: 96vw; border: 1px solid var(--border); display: flex; flex-direction: column; }
+.modal {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-lg); width: 440px; max-width: 96vw;
+  box-shadow: 0 24px 64px rgba(0,0,0,.6);
+  display: flex; flex-direction: column;
+}
 .modal-head { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
-.modal-title { font-size: 14px; font-weight: 700; }
+.modal-title { font-size: 14px; font-weight: 600; }
 .modal-body { padding: 18px; display: flex; flex-direction: column; gap: 12px; }
 .modal-foot { padding: 12px 18px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
 
-/* ─── TOAST ─── */
+/* ── TOAST ── */
 .toasts { position: fixed; bottom: 18px; right: 18px; z-index: 1000; display: flex; flex-direction: column; gap: 7px; pointer-events: none; }
 .toast {
   padding: 9px 14px; border-radius: var(--r); font-size: 12px; font-weight: 500;
-  box-shadow: var(--sh-md); max-width: 320px; display: flex; align-items: center; gap: 8px;
+  max-width: 320px; display: flex; align-items: center; gap: 8px;
   animation: tslide .2s ease;
 }
 @keyframes tslide { from{transform:translateY(8px);opacity:0} to{transform:none;opacity:1} }
-.toast-info    { background: var(--blue-light); color: var(--blue-800); border: 1px solid #a8c8ef; }
-.toast-success { background: var(--ok-bg);      color: var(--ok);       border: 1px solid var(--ok-border); }
-.toast-error   { background: var(--err-bg);     color: var(--err);      border: 1px solid var(--err-border); }
+.toast-info    { background: var(--surface2); color: var(--accent); border: 1px solid var(--accent-dim); }
+.toast-success { background: var(--ok-bg); color: var(--ok); border: 1px solid var(--ok-border); }
+.toast-error   { background: var(--err-bg); color: var(--err); border: 1px solid var(--err-border); }
 
-/* ─── EMPTY STATE ─── */
-.empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 9px; color: var(--text-light); padding: 30px 20px; text-align: center; flex: 1; }
-.empty-ico { font-size: 32px; opacity: .3; }
+/* ── EMPTY STATE ── */
+.empty {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 9px; color: var(--text-mid);
+  padding: 30px 20px; text-align: center; flex: 1;
+}
+.empty-ico { font-size: 30px; opacity: .3; }
 .empty-msg { font-size: 12px; line-height: 1.7; max-width: 250px; }
 
-/* ─── RESPONSIVE ─── */
+/* ── HELPER BADGES ── */
+.info-box {
+  background: var(--accent-dim); border: 1px solid var(--accent);
+  border-radius: var(--r); padding: 9px 12px;
+  font-size: 11px; color: var(--accent); line-height: 1.7;
+}
+.warn-box {
+  background: var(--warn-bg); border: 1px solid var(--warn-border);
+  border-radius: var(--r); padding: 9px 12px;
+  font-size: 11px; color: var(--warn); line-height: 1.7;
+}
+
 @media (max-width: 900px) {
-  .p0 { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
-  .p0-left { border-right: none; border-bottom: 1px solid var(--border); max-height: 220px; }
+  .p0 { grid-template-columns: 1fr; }
+  .p0-left { border-right: none; border-bottom: 1px solid var(--border); max-height: 200px; }
   .p1 { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; }
   .p1-left { border-right: none; border-bottom: 1px solid var(--border); }
 }
 @media (max-width: 640px) {
   .g3 { grid-template-columns: 1fr 1fr; }
-  .header .logo-label { display: none; }
 }
 </style>
 </head>
 <body>
 
-<!-- ─── HEADER ─── -->
-<div class="header">
-  <div class="logo-sq">AB</div>
-  <span class="logo-label">ARIA <b>BULK LOADER</b></span>
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-logo">
+    <div class="hdr-logo-mark">AB</div>
+    <span class="hdr-logo-text">ARIA <span>BULK LOADER</span></span>
+  </div>
   <div class="hdr-right">
-    <div class="status-chip">
+    <div class="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode">
+      <span class="toggle-icon" id="themeIcon">🌙</span>
+      <div class="toggle-track" id="toggleTrack">
+        <div class="toggle-thumb"></div>
+      </div>
+      <span class="theme-toggle-label" id="themeLabel">DARK</span>
+    </div>
+    <div class="status-badge">
       <div class="sdot" id="sdot"></div>
       <span id="stxt">IDLE</span>
     </div>
   </div>
 </div>
 
-<!-- ─── NAV ─── -->
+<!-- NAV -->
 <div class="nav">
-  <div class="ntab on"  id="nt0" onclick="goPage(0)">⚙ Configure</div>
-  <div class="ntab"     id="nt1" onclick="goPage(1)">{} Payload &amp; Mapper</div>
-  <div class="ntab"     id="nt2" onclick="goPage(2)">▶ Execute &amp; Results <span class="nbadge" id="resBadgeNav">0</span></div>
+  <div class="ntab on" id="nt0" onclick="goPage(0)">
+    <span class="ntab-ico">⚙</span> Configure
+  </div>
+  <div class="ntab" id="nt1" onclick="goPage(1)">
+    <span class="ntab-ico">{}</span> Payload &amp; Mapper
+  </div>
+  <div class="ntab" id="nt2" onclick="goPage(2)">
+    <span class="ntab-ico">▶</span> Execute &amp; Results
+    <span class="nbadge" id="resBadgeNav">0</span>
+  </div>
 </div>
 
-<!-- ─── PAGES ─── -->
+<!-- PAGES -->
 <div class="pages">
 
 <!-- ══════════════ PAGE 0: CONFIGURE ══════════════ -->
 <div class="page on" id="page0">
 <div class="p0">
 
-  <!-- left: saved configs -->
+  <!-- Left: saved configs -->
   <div class="p0-left">
     <div class="p0-left-scroll">
-      <div class="slabel" style="margin-bottom:8px;">Saved Configurations</div>
+      <div class="slabel" style="margin-bottom:6px;">Saved Configurations</div>
       <div id="cfgList">
-        <div class="empty" style="padding:16px;">
+        <div class="empty" style="padding:16px 0;">
           <div class="empty-ico">📂</div>
-          <div class="empty-msg" style="font-size:11px;">No saved configs.<br>Use the button below to save.</div>
+          <div class="empty-msg" style="font-size:11px;">No saved configs yet.<br>Execute a run and save it.</div>
         </div>
       </div>
     </div>
@@ -531,12 +641,12 @@ select option { background: var(--surface); }
     </div>
   </div>
 
-  <!-- right: config form -->
+  <!-- Right: config form -->
   <div class="p0-right">
 
     <div class="card">
       <div class="card-head"><span class="card-title">🔌 Connection</span></div>
-      <div class="card-body" style="display:flex;flex-direction:column;gap:10px;">
+      <div class="card-body">
         <div class="field">
           <label>Endpoint URL</label>
           <input type="url" id="cfgEndpoint" placeholder="https://secure.future.aria.com/api/ws/api_ws_class_dispatcher.php">
@@ -550,12 +660,15 @@ select option { background: var(--surface); }
 
     <div class="card">
       <div class="card-head"><span class="card-title">📄 Input File</span></div>
-      <div class="card-body" style="display:flex;flex-direction:column;gap:10px;">
+      <div class="card-body">
         <div class="dropzone" id="dz">
           <input type="file" id="fileIn" accept=".xlsx,.csv">
           <span class="dz-icon">📊</span>
           <div class="dz-hint"><b>Drop .xlsx or .csv here</b><br>or click to browse</div>
-          <div id="dzBadge"></div>
+        </div>
+        <div id="dzBadgeWrap" style="display:none;align-items:center;gap:8px;">
+          <div class="dz-badge" id="dzBadge">—</div>
+          <button class="btn btn-xs btn-danger" onclick="clearFile()" title="Clear file">✕ Clear</button>
         </div>
         <div id="sheetWrap" style="display:none" class="field">
           <label>Sheet</label>
@@ -564,7 +677,7 @@ select option { background: var(--surface); }
         <div id="idWrap" style="display:none">
           <div class="field">
             <label>Record Identifier Columns
-              <span style="text-transform:none;font-weight:400;margin-left:4px;color:var(--text-xlight);">(multi-select, from row 1)</span>
+              <span style="text-transform:none;font-weight:400;margin-left:4px;color:var(--text-dim);">(used for result reporting)</span>
             </label>
             <div class="id-checklist" id="idChecklist"></div>
           </div>
@@ -573,53 +686,68 @@ select option { background: var(--surface); }
     </div>
 
     <div class="card">
-      <div class="card-head"><span class="card-title">⚙ Execution Settings</span></div>
-      <div class="card-body" style="display:flex;flex-direction:column;gap:10px;">
-        <div class="g3">
-          <div class="field"><label>Batch Size</label><input type="number" id="cfgBatch" value="10" min="1" max="500"></div>
-          <div class="field"><label>Delay ms</label><input type="number" id="cfgDelay" value="300" min="0"></div>
-          <div class="field"><label>Retries</label><input type="number" id="cfgRetries" value="0" min="0" max="10"></div>
+      <div class="card-head">
+        <span class="card-title">✱ Validation</span>
+        <span style="font-size:10px;color:var(--text-mid);">Configure after loading payload in Mapper tab</span>
+      </div>
+      <div class="card-body">
+        <div id="validCfgEmpty" style="color:var(--text-mid);font-size:11px;">
+          Load a JSON payload in the Payload tab first.
         </div>
-        <div class="g2">
-          <div class="field"><label>Timeout ms</label><input type="number" id="cfgTimeout" value="30000" min="1000"></div>
-          <div class="field"><label>Concurrency</label><input type="number" id="cfgConcurrency" value="3" min="1" max="20"></div>
+        <div id="validCfgBody" style="display:none;flex-direction:column;gap:10px;">
+          <div style="font-size:11px;color:var(--text-mid);">
+            Mark mandatory fields (✱) and configure date format validation.
+          </div>
+          <div id="validFieldList" style="display:flex;flex-direction:column;gap:4px;max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r);padding:6px 8px;background:var(--surface2);"></div>
+          <div class="field" style="max-width:260px;">
+            <label>Default Date Format</label>
+            <select id="cfgDefaultDateFmt">
+              <option value="">— not a date field —</option>
+              <option value="YYYY-MM-DD">YYYY-MM-DD (2024-01-31)</option>
+              <option value="MM/DD/YYYY">MM/DD/YYYY (01/31/2024)</option>
+              <option value="DD/MM/YYYY">DD/MM/YYYY (31/01/2024)</option>
+              <option value="MM-DD-YYYY">MM-DD-YYYY (01-31-2024)</option>
+              <option value="YYYYMMDD">YYYYMMDD (20240131)</option>
+              <option value="DD-MMM-YYYY">DD-MMM-YYYY (31-Jan-2024)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="card-title">⚙ Execution Settings</span></div>
+      <div class="card-body">
+        <div class="g3">
+          <div class="field">
+            <label>Batch Size</label>
+            <input type="number" id="cfgBatch" value="10" min="1" max="500" title="How many rows to process per batch">
+          </div>
+          <div class="field">
+            <label>Delay (ms)</label>
+            <input type="number" id="cfgDelay" value="300" min="0" title="Pause between batches in milliseconds">
+          </div>
+          <div class="field">
+            <label>Retries</label>
+            <input type="number" id="cfgRetries" value="0" min="0" max="10" title="Max retries per failed row">
+          </div>
         </div>
         <div class="g2">
           <div class="field">
-            <label>On Failure</label>
-            <select id="cfgOnFail">
-              <option value="continue">Continue (log &amp; move on)</option>
-              <option value="stop">Stop execution</option>
-            </select>
+            <label>Timeout (ms)</label>
+            <input type="number" id="cfgTimeout" value="30000" min="1000" title="Per-request timeout">
           </div>
-          <div class="field" style="align-items:left;">
-            <label style="visibility:hidden">_</label>
-            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;text-transform:none;font-weight:500;font-size:12px;letter-spacing:0;">
-              <input type="checkbox" id="cfgDry" style="width:auto;accent-color:var(--blue);">
-              Dry run mode
-            </label>
-            <span
-    title="Validates data with Aria without saving changes. No records will be created or modified."
-    style="
-      display:flex;
-      justify-content:center;
-      align-items:center;
-      width:15px;
-      height:15px;
-      background-color:#a0a0a0;
-      color:white;
-      border-radius:50%;
-      font-size:11px;
-      font-family:'Georgia', serif;
-      font-style:italic;
-      font-weight:bold;
-      cursor:pointer;
-      user-select:none;
-      margin-left:4px;
-      position:relative;
-      right:-100px;
-      top: -25px;">i</span>
+          <div class="field">
+            <label>Concurrency</label>
+            <input type="number" id="cfgConcurrency" value="3" min="1" max="20" title="Parallel requests per batch">
           </div>
+        </div>
+        <div class="field" style="max-width:260px;">
+          <label>On Failure</label>
+          <select id="cfgOnFail">
+            <option value="continue">Continue (log &amp; move on)</option>
+            <option value="stop">Stop execution</option>
+          </select>
         </div>
       </div>
     </div>
@@ -637,7 +765,7 @@ select option { background: var(--surface); }
 <div class="page" id="page1">
 <div class="p1">
 
-  <!-- left: JSON editor -->
+  <!-- Left: JSON editor -->
   <div class="p1-left">
     <div class="panel-bar">
       <span class="panel-title">JSON Payload Template</span>
@@ -649,7 +777,7 @@ select option { background: var(--surface); }
     </div>
     <div class="json-wrap">
       <textarea class="json-editor" id="jed"
-        placeholder='Paste your Aria JSON payload here.&#10;&#10;• Use {{variable}} for values from Excel columns&#10;• Hardcoded values stay as-is&#10;• For arrays, define ONE item template — it repeats automatically:&#10;&#10;  "services": [&#10;    {&#10;      "service_no": {{plan_service_service_no}},&#10;      "units": {{plan_service_units}}&#10;    }&#10;  ]&#10;&#10;  Excel columns: plan_service_1_service_no, plan_service_1_units&#10;                 plan_service_2_service_no, plan_service_2_units  (auto-detected)&#10;  Items with empty first column are skipped automatically.'
+        placeholder='Paste your Aria JSON payload here.&#10;&#10;• Use {{variable}} for dynamic values mapped from file columns&#10;• Leave hardcoded values as-is — they apply to every row&#10;&#10;━━ ARRAYS ━━&#10;Define ONE item template — it repeats automatically per row.&#10;&#10;  "schedule": [&#10;    { "amount": {{schedule_amount}}, "type": "{{schedule_type}}" }&#10;  ]&#10;&#10;  File columns: schedule_0_amount, schedule_0_type&#10;               schedule_1_amount, schedule_1_type  …&#10;  Empty first column = stop building more items.&#10;&#10;━━ NESTED ARRAYS ━━&#10;  "plan": [&#10;    {&#10;      "plan_no": {{plan_plan_no}},&#10;      "service": [&#10;        { "svc_no": {{plan_service_svc_no}}, "units": {{plan_service_units}} }&#10;      ]&#10;    }&#10;  ]&#10;&#10;  Outer cols: plan_0_plan_no, plan_1_plan_no …&#10;  Inner cols: plan_0_service_0_svc_no, plan_0_service_1_svc_no …'
         oninput="onJedChange()" spellcheck="false"></textarea>
       <div class="json-footer">
         <span id="jedStatus" class="txt-dim">Paste a JSON payload above</span>
@@ -661,11 +789,11 @@ select option { background: var(--surface); }
     </div>
   </div>
 
-  <!-- right: mapper -->
+  <!-- Right: mapper -->
   <div class="p1-right">
     <div class="panel-bar">
       <span class="panel-title">Field Mapper</span>
-      <span id="mapSummary" style="font-size:11px;color:var(--text-light);"></span>
+      <span id="mapSummary" style="font-size:11px;color:var(--text-mid);"></span>
       <button class="btn btn-ghost btn-sm" onclick="autoMap()">⚡ Auto-Map</button>
     </div>
     <div class="mapper-scroll">
@@ -686,8 +814,11 @@ select option { background: var(--surface); }
 <div class="p2">
 
   <div class="run-bar">
-    <button class="btn btn-green" id="runBtn" onclick="startRun()" disabled>▶ Execute</button>
-    <button class="btn btn-danger btn-sm" id="stopBtn" onclick="stopRun()" style="display:none">⏹ Stop</button>
+    <button class="btn btn-green" id="runBtn" onclick="startRun(false)" disabled>▶ Execute</button>
+    <button class="btn btn-outline" id="dryRunBtn" onclick="startRun(true)" disabled title="Validates + pings endpoint — no records created">🔍 Dry Run</button>
+    <button class="btn btn-danger btn-sm" id="stopBtn" onclick="pauseRun()" style="display:none">⏸ Pause</button>
+    <button class="btn btn-outline btn-sm" id="resumeBtn" onclick="resumeRun()" style="display:none">▶ Resume</button>
+    <button class="btn btn-ghost btn-sm" id="abortBtn" onclick="abortRun()" style="display:none">⏹ Abort</button>
     <button class="btn btn-ghost btn-sm" onclick="goPage(0)">← Back</button>
     <div class="run-bar-right">
       <button class="btn btn-outline btn-sm" onclick="openSaveModal()">💾 Save Config</button>
@@ -698,12 +829,13 @@ select option { background: var(--surface); }
 
   <div class="stats-row">
     <div class="sbox"><div class="sval blue"  id="sTot">0</div><div class="slbl">Total</div></div>
-    <div class="sbox"><div class="sval green" id="sOk">0</div><div class="slbl">Success</div></div>
-    <div class="sbox"><div class="sval red"   id="sFail">0</div><div class="slbl">Failed</div></div>
+    <div class="sbox"><div class="sval green" id="sOk">0</div><div class="slbl">✓ Success</div></div>
+    <div class="sbox"><div class="sval red"   id="sFail">0</div><div class="slbl">✕ Failed</div></div>
+    <div class="sbox"><div class="sval" id="sValidErr" style="color:var(--warn)">0</div><div class="slbl">⚠ Validation</div></div>
     <div class="sbox"><div class="sval warn"  id="sRate">—</div><div class="slbl">Rate</div></div>
     <div class="sbox"><div class="sval" id="sAvg" style="color:var(--text-mid)">—</div><div class="slbl">Avg ms</div></div>
     <div class="id-boxes" id="idBoxes" style="display:none">
-      <span style="font-size:10px;font-weight:700;color:var(--text-light);text-transform:uppercase;letter-spacing:.06em;margin-right:2px;">IDs:</span>
+      <span style="font-size:10px;font-weight:600;color:var(--text-mid);letter-spacing:.06em;margin-right:4px;text-transform:uppercase;">IDs:</span>
       <div id="idTagsWrap"></div>
     </div>
   </div>
@@ -715,15 +847,15 @@ select option { background: var(--surface); }
 
   <div class="itabs">
     <div class="itab on" onclick="itab('console')">Console <span class="ibdg" id="logBdg">0</span></div>
-    <div class="itab"    onclick="itab('results')">Results <span class="ibdg" id="resBdg">0</span></div>
-    <div class="itab"    onclick="itab('preview')">Payload Preview</div>
+    <div class="itab" onclick="itab('results')">Results <span class="ibdg" id="resBdg">0</span></div>
+    <div class="itab" onclick="itab('preview')">Payload Preview</div>
   </div>
 
   <div class="ipane on" id="ip-console">
     <div class="console-body" id="consoleEl">
-      <div class="empty" style="padding:20px;">
-        <div class="empty-ico" style="color:#1e293b">⬡</div>
-        <div class="empty-msg" style="color:#334155">Execution log will appear here</div>
+      <div class="empty" style="padding:24px;">
+        <div class="empty-ico" style="color:#21262d">⬡</div>
+        <div class="empty-msg" style="color:#30363d">Execution log will appear here</div>
       </div>
     </div>
   </div>
@@ -734,7 +866,12 @@ select option { background: var(--surface); }
       <button class="btn btn-ghost btn-sm" onclick="filt('SUCCESS')">✓ Success</button>
       <button class="btn btn-ghost btn-sm" onclick="filt('FAILURE')">✕ Failed</button>
       <button class="btn btn-ghost btn-sm" onclick="filt('VALIDATION_ERROR')">⚠ Validation</button>
-      <span id="filtLbl" style="margin-left:auto;font-size:11px;color:var(--text-light);"></span>
+      <span id="filtLbl" style="font-size:11px;color:var(--text-mid);"></span>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:5px;">
+        <button class="btn btn-ghost btn-xs" id="pgPrev" onclick="pgNav(-1)" disabled>‹</button>
+        <span id="pgLbl" style="font-size:11px;color:var(--text-mid);font-family:var(--mono);white-space:nowrap;min-width:80px;text-align:center;">—</span>
+        <button class="btn btn-ghost btn-xs" id="pgNext" onclick="pgNav(1)" disabled>›</button>
+      </div>
     </div>
     <div class="res-wrap">
       <div id="resWrap"><div class="empty"><div class="empty-ico">📋</div><div class="empty-msg">No results yet</div></div></div>
@@ -742,8 +879,8 @@ select option { background: var(--surface); }
   </div>
 
   <div class="ipane" id="ip-preview">
-    <div style="padding:7px 12px;border-bottom:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;gap:8px;flex-shrink:0;">
-      <span style="font-size:11px;color:var(--text-light);">Sample payload — row 1 · sensitive fields masked</span>
+    <div style="padding:7px 12px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:8px;flex-shrink:0;">
+      <span style="font-size:11px;color:var(--text-mid);">Sample payload — row 1 · sensitive fields masked</span>
       <button class="btn btn-ghost btn-xs" onclick="refreshPreview()">Refresh</button>
     </div>
     <div class="pay-pre" id="payPre">No payload built yet.</div>
@@ -754,7 +891,7 @@ select option { background: var(--surface); }
 
 </div><!-- /pages -->
 
-<!-- ─── SAVE CONFIG MODAL ─── -->
+<!-- SAVE CONFIG MODAL -->
 <div class="modal-bg" id="saveModal">
   <div class="modal">
     <div class="modal-head">
@@ -768,7 +905,7 @@ select option { background: var(--surface); }
       </div>
       <div class="field">
         <label>Notes (optional)</label>
-        <textarea id="saveNotes" rows="2" placeholder="Any notes about this config…"></textarea>
+        <textarea id="saveNotes" rows="2" placeholder="Any notes about this configuration…"></textarea>
       </div>
     </div>
     <div class="modal-foot">
@@ -778,7 +915,7 @@ select option { background: var(--surface); }
   </div>
 </div>
 
-<!-- ─── TOASTS ─── -->
+<!-- TOASTS -->
 <div class="toasts" id="toasts"></div>
 
 <script>
@@ -787,17 +924,24 @@ select option { background: var(--surface); }
 // STATE
 // ═══════════════════════════════════════════════════════════════
 const S = {
-  sheets: {},        // sheetName → [row, ...]
+  sheets: {},
   sheet: null,
-  cols: [],          // column names from row 0
-  vars: [],          // detected variable names from JSON template
-  maps: {},          // varName → {type:'col'|'const', value:''}
+  cols: [],
+  vars: [],
+  maps: {},
   results: [],
-  saved: [],         // saved configs
+  saved: [],
   running: false,
+  paused: false,
   stop: false,
   logN: 0,
+  mandatoryFields: new Set(),
+  dateFields: {},
+  pg: 0,
+  PG_SIZE: 500,
 };
+
+// ─── PROXY CONFIG (do not change) ───
 const PROXY_URL = "https://aria-proxy.ariabulkloader.workers.dev";
 
 // ═══════════════════════════════════════════════════════════════
@@ -805,15 +949,15 @@ const PROXY_URL = "https://aria-proxy.ariabulkloader.workers.dev";
 // ═══════════════════════════════════════════════════════════════
 function goPage(n) {
   [0,1,2].forEach(i => {
-    document.getElementById(`page${i}`).classList.toggle('on', i===n);
-    document.getElementById(`nt${i}`).classList.toggle('on', i===n);
+    document.getElementById('page'+i).classList.toggle('on', i===n);
+    document.getElementById('nt'+i).classList.toggle('on', i===n);
   });
   if (n===2) refreshPreview();
 }
 
 function itab(name) {
   ['console','results','preview'].forEach(id => {
-    document.getElementById(`ip-${id}`).classList.toggle('on', id===name);
+    document.getElementById('ip-'+id).classList.toggle('on', id===name);
   });
   document.querySelectorAll('.itab').forEach((t,i) =>
     t.classList.toggle('on', ['console','results','preview'][i]===name)
@@ -851,21 +995,33 @@ function loadFile(file) {
       }
       S.sheet = wb.SheetNames[0];
 
-      // Sheet selector
       const sel = document.getElementById('sheetSel');
       sel.innerHTML = wb.SheetNames.map(n =>
-        `<option value="${escH(n)}">${escH(n)} (${S.sheets[n].length} rows)</option>`
+        '<option value="'+escH(n)+'">'+escH(n)+' ('+S.sheets[n].length+' rows)</option>'
       ).join('');
       document.getElementById('sheetWrap').style.display = wb.SheetNames.length > 1 ? 'flex' : 'none';
 
       refreshCols();
-      document.getElementById('dzBadge').innerHTML = `<div class="filetag">✓ ${escH(file.name)}</div>`;
-      toast(`Loaded: ${file.name} · ${(S.sheets[S.sheet]||[]).length} rows`,'success');
+      const badgeWrap = document.getElementById('dzBadgeWrap');
+      document.getElementById('dzBadge').textContent = '✓ ' + file.name + ' · ' + (S.sheets[S.sheet]||[]).length + ' rows';
+      badgeWrap.style.display = 'flex';
+      toast('Loaded: '+file.name+' · '+(S.sheets[S.sheet]||[]).length+' rows','success');
       renderMapper();
       checkReady();
     } catch(err) { toast('Parse error: '+err.message,'error'); }
   };
   ext==='csv' ? reader.readAsText(file) : reader.readAsArrayBuffer(file);
+}
+
+function clearFile() {
+  S.sheets = {}; S.sheet = null; S.cols = [];
+  fileIn.value = '';
+  document.getElementById('dzBadgeWrap').style.display = 'none';
+  document.getElementById('sheetWrap').style.display = 'none';
+  document.getElementById('idWrap').style.display = 'none';
+  renderMapper();
+  checkReady();
+  toast('File cleared','info');
 }
 
 function normalRow(r) {
@@ -877,30 +1033,26 @@ function normalRow(r) {
 
 function onSheetChange() {
   S.sheet = document.getElementById('sheetSel').value;
-  refreshCols();
-  renderMapper();
+  refreshCols(); renderMapper();
 }
 
 function refreshCols() {
   const rows = S.sheets[S.sheet]||[];
   S.cols = rows.length ? Object.keys(rows[0]) : [];
-  buildIdChecklist();
-  updateIdTags();
+  buildIdChecklist(); updateIdTags();
 }
 
 function buildIdChecklist() {
   const wrap = document.getElementById('idChecklist');
   if (!S.cols.length) { document.getElementById('idWrap').style.display='none'; return; }
-  document.getElementById('idWrap').style.display='block';
-
-  // Guess good defaults
+  document.getElementById('idWrap').style.display = 'block';
   const GUESSES = ['client_acct_id','plan_id','client_plan_id','coupon_cd','client_service_id','id','name'];
   wrap.innerHTML = S.cols.map(c => {
     const chk = GUESSES.includes(c) ? 'checked' : '';
-    return `<label class="id-check-item">
-      <input type="checkbox" value="${escH(c)}" ${chk} onchange="updateIdTags()">
-      <label style="font-family:var(--mono);font-size:11px;cursor:pointer;">${escH(c)}</label>
-    </label>`;
+    return '<label class="id-check-item">'
+      + '<input type="checkbox" value="'+escH(c)+'" '+chk+' onchange="updateIdTags()">'
+      + '<span style="font-family:var(--mono);font-size:11px;">'+escH(c)+'</span>'
+      + '</label>';
   }).join('');
 }
 
@@ -913,10 +1065,10 @@ function updateIdTags() {
   const boxes = document.getElementById('idBoxes');
   const tagsWrap = document.getElementById('idTagsWrap');
   if (ids.length) {
-    boxes.style.display='flex';
-    tagsWrap.innerHTML = ids.map(id=>`<span class="id-tag">${escH(id)}</span>`).join('');
+    boxes.style.display = 'flex';
+    tagsWrap.innerHTML = ids.map(id=>'<span class="id-tag">'+escH(id)+'</span>').join('');
   } else {
-    boxes.style.display='none';
+    boxes.style.display = 'none';
   }
 }
 
@@ -942,8 +1094,8 @@ function onJedChange() {
 
   const vars = detectVars(raw);
   stEl.className='txt-ok'; stEl.textContent='✓ Valid JSON template';
-  vcEl.textContent = `${vars.length} variable${vars.length!==1?'s':''}`;
-  btn.disabled=false;
+  vcEl.textContent = vars.length+' variable'+(vars.length!==1?'s':'');
+  btn.disabled = false;
   S.vars = vars;
   syncMapState(vars);
   renderMapper();
@@ -981,20 +1133,31 @@ function fmtJson() {
 function clearJson() { document.getElementById('jed').value=''; onJedChange(); }
 
 function loadEx() {
-  document.getElementById('cfgApiName').value = document.getElementById('cfgApiName').value || 'create_service_m';
+  document.getElementById('cfgApiName').value = document.getElementById('cfgApiName').value || 'create_plan_m';
   document.getElementById('jed').value = `{
-  "service_name": "{{service_name}}",
-  "client_service_id": "{{client_service_id}}",
-  "service_type": {{service_type}},
-  "gl_cd": "GL-100",
-  "taxable_ind": 1,
-  "active_ind": 1,
-  "description": "{{description}}",
-  "locale_name_desc": [
+  "plan_no": "{{plan_no}}",
+  "plan_name": "{{plan_name}}",
+  "client_plan_id": "{{client_plan_id}}",
+  "plan_type_no": {{plan_type_no}},
+  "currency_cd": "{{currency_cd}}",
+  "schedule": [
     {
-      "lang_cd": "{{locale_lang_cd}}",
-      "name": "{{locale_name}}",
-      "description": "{{locale_description}}"
+      "schedule_no": {{schedule_schedule_no}},
+      "amount": {{schedule_amount}},
+      "from_date": "{{schedule_from_date}}"
+    }
+  ],
+  "plan_service": [
+    {
+      "service_no": {{plan_service_service_no}},
+      "units": {{plan_service_units}},
+      "tier": [
+        {
+          "from_unit": {{plan_service_tier_from_unit}},
+          "to_unit": {{plan_service_tier_to_unit}},
+          "amount": {{plan_service_tier_amount}}
+        }
+      ]
     }
   ]
 }`;
@@ -1008,67 +1171,127 @@ function syncMapState(vars) {
   const keep = new Set(vars);
   for (const k of Object.keys(S.maps)) if (!keep.has(k)) delete S.maps[k];
   for (const v of vars) if (!S.maps[v]) S.maps[v] = {type:'col', value:''};
+  renderValidationConfig(vars);
+}
+
+function renderValidationConfig(vars) {
+  const emptyEl = document.getElementById('validCfgEmpty');
+  const bodyEl  = document.getElementById('validCfgBody');
+  const listEl  = document.getElementById('validFieldList');
+  if (!vars || !vars.length) { emptyEl.style.display='block'; bodyEl.style.display='none'; return; }
+  emptyEl.style.display='none'; bodyEl.style.display='flex';
+  const DATE_FMTS = ['','YYYY-MM-DD','MM/DD/YYYY','DD/MM/YYYY','MM-DD-YYYY','YYYYMMDD','DD-MMM-YYYY'];
+  listEl.innerHTML = vars.map(v => {
+    const isMand = S.mandatoryFields && S.mandatoryFields.has(v);
+    const dateFmt = S.dateFields?.[v] || '';
+    const fmtOpts = DATE_FMTS.map(f=>'<option value="'+f+'"'+(dateFmt===f?' selected':'')+'>'+( f||'— not a date —')+'</option>').join('');
+    return '<div style="display:flex;align-items:center;gap:8px;padding:3px 0;border-bottom:1px solid var(--surface3);">'
+      + '<input type="checkbox" id="mand_'+v+'" style="width:auto;accent-color:var(--err);flex-shrink:0;" '+(isMand?'checked':'')+' onchange="toggleMandatory(\''+v+'\',this.checked)" title="Mark as mandatory">'
+      + '<span style="font-family:var(--mono);font-size:11px;color:var(--purple);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;" title="{{'+v+'}}">{{'+v+'}}</span>'
+      + '<select style="font-size:10px;padding:2px 4px;border:1px solid var(--border);border-radius:3px;background:var(--surface);color:var(--text);width:140px;flex-shrink:0;" onchange="setDateFmt(\''+v+'\',this.value)">'+fmtOpts+'</select>'
+      + '</div>';
+  }).join('');
+}
+
+function toggleMandatory(v, checked) {
+  if (!S.mandatoryFields) S.mandatoryFields = new Set();
+  if (checked) S.mandatoryFields.add(v); else S.mandatoryFields.delete(v);
+  renderMapper();
+}
+
+function setDateFmt(v, fmt) {
+  if (!S.dateFields) S.dateFields = {};
+  if (fmt) S.dateFields[v] = fmt; else delete S.dateFields[v];
 }
 
 function autoMap() {
   let n = 0;
   for (const v of S.vars) {
-    if (S.cols.includes(v)) { S.maps[v]={type:'col',value:v}; n++; }
-    else {
-      // try stripping common prefixes
-      const last = v.split('_').slice(-2).join('_');
-      const match = S.cols.find(c => c === last || c === v);
+    if (S.cols.includes(v)) { S.maps[v]={type:'col',value:v}; n++; continue; }
+    const parts = v.split('_');
+    let matched = false;
+    for (let start = 1; start < parts.length; start++) {
+      const cand = parts.slice(start).join('_');
+      if (S.cols.includes(cand)) { S.maps[v]={type:'col',value:cand}; n++; matched=true; break; }
+    }
+    if (!matched) {
+      const match = S.cols.find(c => {
+        for (let start = parts.length-1; start >= Math.max(1, parts.length-3); start--) {
+          if (c === parts.slice(start).join('_')) return true;
+        }
+        return false;
+      });
       if (match) { S.maps[v]={type:'col',value:match}; n++; }
     }
   }
   renderMapper();
-  toast(`Auto-mapped ${n} of ${S.vars.length} variables`, n>0?'success':'error');
+  toast('Auto-mapped '+n+' of '+S.vars.length+' variables', n>0?'success':'error');
 }
 
 function detectArrayGroups(raw) {
-  // Returns { prefix: [{varName, fieldKey}] }
-  const groups = {};
+  const groups = [];
   try {
     const san = raw
       .replace(/"{{([\w.]+)}}"/g,'"__VS:$1__"')
       .replace(/{{([\w.]+)}}/g,'"__VR:$1__"');
     const parsed = JSON.parse(san);
-    walkForArrays(parsed, '', groups);
+    // Walk each top-level key so parentPrefix starts as the key name
+    for (const [k, v] of Object.entries(parsed)) {
+      if (Array.isArray(v)) walkForArrays(v, k, groups);
+    }
   } catch(e) {}
-  return groups;
+  const seen = new Set();
+  return groups.filter(g => { if (seen.has(g.prefix)) return false; seen.add(g.prefix); return true; });
 }
 
-function walkForArrays(obj, path, groups) {
+function walkForArrays(obj, parentPrefix, groups) {
   if (Array.isArray(obj)) {
     const fields = [];
-    for (const item of obj) {
-      if (item && typeof item==='object') {
-        for (const [k,v] of Object.entries(item)) {
-          if (typeof v==='string') {
-            let vn = null;
-            if (v.startsWith('__VS:')) vn = v.slice(5,-2);
-            if (v.startsWith('__VR:')) vn = v.slice(5,-2);
-            if (vn && !fields.find(f=>f.varName===vn)) fields.push({fieldKey:k, varName:vn});
-          }
-        }
+    function collectFields(item) {
+      if (!item || typeof item !== 'object') return;
+      for (const [k, v] of Object.entries(item)) {
+        if (Array.isArray(v)) continue;
+        if (typeof v === 'string') {
+          let vn = null;
+          if (v.startsWith('__VS:')) vn = v.slice(5, -2);
+          else if (v.startsWith('__VR:')) vn = v.slice(5, -2);
+          if (vn && !fields.find(f => f.varName === vn)) fields.push({fieldKey:k, varName:vn});
+        } else if (v && typeof v === 'object') collectFields(v);
       }
     }
+    for (const item of obj) collectFields(item);
+
+    // Derive prefix from variable names if possible, else use parentPrefix
+    let prefix = parentPrefix;
     if (fields.length) {
-      // derive prefix from first varName
-      const firstVar = fields[0].varName;
-      let prefix = firstVar;
-      // remove suffix that matches fieldKey
+      let derived = fields[0].varName;
       for (const f of fields) {
-        const sfx = '_'+f.fieldKey;
+        const sfx = '_' + f.fieldKey;
         if (f.varName.endsWith(sfx)) {
           const cand = f.varName.slice(0, f.varName.length - sfx.length);
-          if (fields.every(ff => ff.varName.startsWith(cand+'_'))) { prefix=cand; break; }
+          if (fields.every(ff => ff.varName.startsWith(cand+'_') || ff.varName === cand)) { derived = cand; break; }
         }
       }
-      groups[prefix] = fields;
+      prefix = derived;
     }
-  } else if (obj && typeof obj==='object') {
-    for (const [k,v] of Object.entries(obj)) walkForArrays(v, k, groups);
+
+    // keyName = the JSON key this array lives under (last segment of parentPrefix)
+    const keyName = parentPrefix ? parentPrefix.split('_').pop() : '';
+    if (prefix) groups.push({prefix, fields, keyName});
+
+    // Recurse: pass full accumulated prefix so nested arrays get correct parent path
+    for (const item of obj) {
+      if (item && typeof item === 'object' && !Array.isArray(item)) {
+        for (const [k, v] of Object.entries(item)) {
+          if (Array.isArray(v)) walkForArrays(v, prefix ? prefix+'_'+k : k, groups);
+        }
+      }
+    }
+  } else if (obj && typeof obj === 'object') {
+    for (const [k, v] of Object.entries(obj)) {
+      if (Array.isArray(v)) walkForArrays(v, k, groups);
+      else if (v && typeof v === 'object') walkForArrays(v, parentPrefix, groups);
+    }
   }
 }
 
@@ -1077,20 +1300,18 @@ function renderMapper() {
   const sumEl = document.getElementById('mapSummary');
 
   if (!S.vars.length) {
-    wrap.innerHTML=`<div class="empty"><div class="empty-ico">🗂</div><div class="empty-msg">Paste a payload with <code style="color:var(--purple)">{{variables}}</code> and upload a file to map columns here.</div></div>`;
+    wrap.innerHTML='<div class="empty"><div class="empty-ico">🗂</div><div class="empty-msg">Paste a payload with <code style="color:var(--purple)">{{variables}}</code> and upload a file to map columns here.</div></div>';
     sumEl.textContent=''; return;
   }
 
   const raw = document.getElementById('jed').value;
   const arrGroups = detectArrayGroups(raw);
   const arrVarMap = {};
-  for (const [pfx, fields] of Object.entries(arrGroups))
-    for (const f of fields) arrVarMap[f.varName] = pfx;
+  for (const g of arrGroups) for (const f of g.fields) arrVarMap[f.varName] = g.prefix;
 
   const mapped = S.vars.filter(v=>S.maps[v]?.value).length;
-  sumEl.textContent = `${mapped}/${S.vars.length} mapped`;
+  sumEl.textContent = mapped+'/'+S.vars.length+' mapped';
 
-  // Group: __scalar__ vs array prefix
   const groups = {};
   for (const v of S.vars) {
     const g = arrVarMap[v]||'__scalar__';
@@ -1098,27 +1319,32 @@ function renderMapper() {
     groups[g].push(v);
   }
 
-  let html = `<table class="mp-table"><thead><tr>
-    <th style="width:12px"></th>
-    <th>Variable</th>
-    <th style="width:105px">Source</th>
-    <th>Column / Constant Value</th>
-  </tr></thead><tbody>`;
+  let html = '<table class="mp-table"><thead><tr>'
+    + '<th style="width:12px"></th>'
+    + '<th>Variable</th>'
+    + '<th style="width:105px">Source</th>'
+    + '<th>Column / Constant Value</th>'
+    + '<th style="width:60px;text-align:center;">Req.</th>'
+    + '</tr></thead><tbody>';
 
   if (groups['__scalar__']?.length)
     for (const v of groups['__scalar__']) html += mpRow(v, false, '');
 
-  for (const [pfx, vars] of Object.entries(groups)) {
-    if (pfx==='__scalar__') continue;
-    html += `<tr><td colspan="4">
-      <div class="arr-grp-hd">
-        <span>⊞ ARRAY GROUP</span>
-        <span class="arr-badge">${escH(pfx)}</span>
-        <span style="margin-left:auto;font-weight:400;color:var(--text-mid);font-size:9px;">
-          Columns: ${escH(pfx)}_1_field · ${escH(pfx)}_2_field · … (empty first col = skip item)
-        </span>
-      </div>
-    </td></tr>`;
+  const renderedPfx = new Set();
+  for (const ag of arrGroups) {
+    const pfx = ag.prefix;
+    if (renderedPfx.has(pfx)) continue;
+    renderedPfx.add(pfx);
+    const vars = groups[pfx] || [];
+    if (!vars.length) continue;
+    const nestDepth = (pfx.match(/_\d+_/g)||[]).length;
+    const indent = nestDepth > 0 ? 'margin-left:'+(nestDepth*12)+'px;' : '';
+    const nestLabel = nestDepth > 0 ? '⤷ NESTED ARRAY' : '⊞ ARRAY GROUP';
+    html += '<tr><td colspan="5"><div class="arr-grp-hd" style="'+indent+'">'
+      + '<span>'+nestLabel+'</span>'
+      + '<span class="arr-badge">'+escH(pfx)+'</span>'
+      + '<span style="margin-left:auto;font-weight:400;color:var(--text-mid);font-size:9px;">Cols: '+escH(pfx)+'_0_field · '+escH(pfx)+'_1_field · … (empty first col = stop)</span>'
+      + '</div></td></tr>';
     for (const v of vars) html += mpRow(v, true, pfx);
   }
 
@@ -1131,31 +1357,27 @@ function mpRow(v, isArr, pfx) {
   const m = S.maps[v]||{type:'col',value:''};
   const isCol = m.type==='col';
   const dotCls = m.value ? (isCol?'col':'const') : '';
-
-  // Build column options from S.cols (dynamic from uploaded file)
+  const isMand = S.mandatoryFields && S.mandatoryFields.has(v);
   const colOpts = S.cols.length
-    ? S.cols.map(c=>`<option value="${escH(c)}" ${isCol&&m.value===c?'selected':''}>${escH(c)}</option>`).join('')
+    ? S.cols.map(c=>'<option value="'+escH(c)+'"'+(isCol&&m.value===c?' selected':'')+'>'+escH(c)+'</option>').join('')
     : '<option value="">— upload a file first —</option>';
 
-  return `<tr class="${isArr?'arr-row':''}">
-    <td><div class="mdot ${dotCls}" id="dot_${escH(v)}"></div></td>
-    <td><span class="var-chip"><span class="brace">{{</span>${escH(v)}<span class="brace">}}</span></span></td>
-    <td>
-      <div class="src-toggle">
-        <button class="${isCol?'on':''}" onclick="setType('${escH(v)}','col')">Col</button>
-        <button class="${!isCol?'on':''}" onclick="setType('${escH(v)}','const')">Const</button>
-      </div>
-    </td>
-    <td>
-      ${isCol
-        ? `<select class="map-sel" onchange="setVal('${escH(v)}',this.value)">
-             <option value="">— select column —</option>${colOpts}
-           </select>`
-        : `<input class="map-const-in" type="text" placeholder="hardcoded value"
-             value="${escH(m.value)}" oninput="setVal('${escH(v)}',this.value)">`
-      }
-    </td>
-  </tr>`;
+  return '<tr class="'+(isArr?'arr-row':'')+'">'
+    + '<td><div class="mdot '+dotCls+'" id="dot_'+escH(v)+'"></div></td>'
+    + '<td><span class="var-chip"><span class="brace">{{</span>'+escH(v)+'<span class="brace">}}</span></span></td>'
+    + '<td><div class="src-toggle">'
+      + '<button class="'+(isCol?'on':'')+'" onclick="setType(\''+escH(v)+'\',\'col\')">Col</button>'
+      + '<button class="'+(isCol?'':'on')+'" onclick="setType(\''+escH(v)+'\',\'const\')">Const</button>'
+    + '</div></td>'
+    + '<td>'
+      + (isCol
+        ? '<select class="map-sel" onchange="setVal(\''+escH(v)+'\',this.value)"><option value="">— select column —</option>'+colOpts+'</select>'
+        : '<input class="map-const-in" type="text" placeholder="hardcoded value" value="'+escH(m.value)+'" oninput="setVal(\''+escH(v)+'\',this.value)">')
+    + '</td>'
+    + '<td style="text-align:center;">'
+      + (isMand ? '<span style="color:var(--err);font-size:12px;font-weight:700;" title="Mandatory field">✱</span>' : '<span style="color:var(--text-dim);font-size:11px;">—</span>')
+    + '</td>'
+    + '</tr>';
 }
 
 function setType(v, type) { S.maps[v]={type,value:''}; renderMapper(); }
@@ -1163,8 +1385,8 @@ function setType(v, type) { S.maps[v]={type,value:''}; renderMapper(); }
 function setVal(v, val) {
   if (!S.maps[v]) S.maps[v]={type:'col',value:val};
   else S.maps[v].value=val;
-  const dot = document.getElementById(`dot_${v}`);
-  if (dot) dot.className = 'mdot '+(val?(S.maps[v].type==='const'?'const':'col'):'');
+  const dot = document.getElementById('dot_'+v);
+  if (dot) dot.className='mdot '+(val?(S.maps[v].type==='const'?'const':'col'):'');
   checkReady();
 }
 
@@ -1172,7 +1394,9 @@ function checkReady() {
   const hasFile = S.sheet && (S.sheets[S.sheet]||[]).length>0;
   const hasApi  = document.getElementById('cfgApiName').value.trim();
   const hasJson = document.getElementById('jed').value.trim();
-  document.getElementById('runBtn').disabled = !(hasFile && hasApi && hasJson);
+  const ready = !!(hasFile && hasApi && hasJson);
+  document.getElementById('runBtn').disabled = !ready;
+  document.getElementById('dryRunBtn').disabled = !ready;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1181,12 +1405,9 @@ function checkReady() {
 function buildPayload(row) {
   const raw = document.getElementById('jed').value;
   const arrGroups = detectArrayGroups(raw);
-
   const arrVarSet = new Set();
-  for (const fields of Object.values(arrGroups))
-    for (const f of fields) arrVarSet.add(f.varName);
+  for (const ag of arrGroups) for (const f of ag.fields) arrVarSet.add(f.varName);
 
-  // Replace scalar vars
   let tpl = raw;
   for (const v of S.vars) {
     if (arrVarSet.has(v)) continue;
@@ -1194,39 +1415,16 @@ function buildPayload(row) {
     if (!m) continue;
     const val = m.type==='const' ? m.value : (row[m.value]??null);
     const rep = (val===null||val==='') ? 'null' : JSON.stringify(coerce(val));
-    tpl = tpl.replace(new RegExp(`"{{${escR(v)}}}"`, 'g'), rep);
-    tpl = tpl.replace(new RegExp(`{{${escR(v)}}}`, 'g'), rep);
+    tpl = tpl.replace(new RegExp('"{{'+escR(v)+'}}"', 'g'), rep);
+    tpl = tpl.replace(new RegExp('{{'+escR(v)+'}}', 'g'), rep);
   }
 
-  // Replace array sections
-  for (const [pfx, fields] of Object.entries(arrGroups)) {
-    const maxIdx = getMaxIdx(row, pfx);
-    const items = [];
-
-    for (let idx=1; idx<=maxIdx; idx++) {
-      let itemTpl = getItemTpl(raw, fields);
-      let hasVal = false;
-      let skipItem = false;
-
-      for (let fi=0; fi<fields.length; fi++) {
-        const f = fields[fi];
-        const sfx = getFieldSuffix(f.varName, pfx);
-        const col = `${pfx}_${idx}_${sfx}`;
-        const val = row[col]??null;
-
-        // If first field of item is empty → skip entire item
-        if (fi===0 && (val===null||val==='')) { skipItem=true; break; }
-        if (val!==null&&val!=='') hasVal=true;
-
-        const rep = (val===null||val==='') ? 'null' : JSON.stringify(coerce(val));
-        itemTpl = itemTpl.replace(new RegExp(`"{{${escR(f.varName)}}}"`, 'g'), rep);
-        itemTpl = itemTpl.replace(new RegExp(`{{${escR(f.varName)}}}`, 'g'), rep);
-      }
-      if (!skipItem && hasVal) items.push(itemTpl);
-    }
-
-    const arrStr = items.length ? `[${items.join(',')}]` : '[]';
-    tpl = replaceArrSection(tpl, fields, arrStr);
+  for (const ag of arrGroups) {
+    const pfx = ag.prefix;
+    // Skip if this array has a parent group — it will be handled by recursion
+    const parentGroup = arrGroups.find(g => g.prefix !== pfx && pfx.startsWith(g.prefix + '_'));
+    if (parentGroup) continue;
+    tpl = buildArraySection(tpl, tpl, row, pfx, ag.fields, ag.keyName, arrGroups, '');
   }
 
   try { return JSON.parse(tpl); }
@@ -1237,35 +1435,159 @@ function buildPayload(row) {
   }
 }
 
-function getFieldSuffix(varName, pfx) {
-  return varName.startsWith(pfx+'_') ? varName.slice(pfx.length+1) : varName;
-}
-
-function getMaxIdx(row, pfx) {
-  let max=0;
-  for (const col of Object.keys(row)) {
-    const m = col.match(new RegExp(`^${escR(pfx)}_(\\d+)_`));
-    if (m) max=Math.max(max, parseInt(m[1]));
+// Find array block in str by JSON key name (e.g. "tier": [...])
+function _findArrayBlockByKey(str, keyName, fromPos) {
+  const pattern = '"' + keyName + '"';
+  const keyPos = str.indexOf(pattern, fromPos || 0);
+  if (keyPos < 0) return null;
+  let bStart = -1;
+  for (let i = keyPos + pattern.length; i < str.length; i++) {
+    if (str[i] === '[') { bStart = i; break; }
+    if (str[i] !== ':' && str[i] !== ' ' && str[i] !== '\n' && str[i] !== '\r' && str[i] !== '\t') break;
   }
-  return max;
+  if (bStart < 0) return null;
+  let d = 0, bEnd = -1;
+  for (let i = bStart; i < str.length; i++) {
+    if (str[i] === '[') d++;
+    else if (str[i] === ']') { d--; if (d === 0) { bEnd = i; break; } }
+  }
+  if (bEnd < 0) return null;
+  return { start: bStart, end: bEnd };
 }
 
-function getItemTpl(raw, fields) {
-  const vn = fields[0].varName;
-  const re = /\[[\s\S]*?\{([\s\S]*?)\}[\s\S]*?\]/g;
-  let m;
-  while ((m=re.exec(raw))!==null)
-    if (m[0].includes(`{{${vn}}}`)) {
-      const obj = m[0].match(/\{[\s\S]*?\}/);
-      if (obj) return obj[0];
+// Find array block by walking backwards from a variable reference
+function _findArrayBlockByVar(str, varName) {
+  const varPos = str.indexOf('{{'+varName+'}}');
+  if (varPos < 0) return null;
+  let bStart = -1;
+  for (let i = varPos; i >= 0; i--) { if (str[i] === '[') { bStart = i; break; } }
+  if (bStart < 0) return null;
+  let d = 0, bEnd = -1;
+  for (let i = bStart; i < str.length; i++) {
+    if (str[i] === '[') d++;
+    else if (str[i] === ']') { d--; if (d === 0) { bEnd = i; break; } }
+  }
+  if (bEnd < 0) return null;
+  return { start: bStart, end: bEnd };
+}
+
+// Extract the first complete {...} object from an array block
+function _extractFirstObject(str, block) {
+  const ac = str.slice(block.start, block.end + 1);
+  let od = 0, oStart = -1, oEnd = -1;
+  for (let i = 0; i < ac.length; i++) {
+    if (ac[i] === '{') { od++; if (oStart < 0) oStart = i; }
+    else if (ac[i] === '}') { od--; if (od === 0) { oEnd = i; break; } }
+  }
+  return (oStart >= 0 && oEnd >= 0) ? ac.slice(oStart, oEnd + 1) : null;
+}
+
+// Returns true if childPfx is a DIRECT child of parentPfx with no intermediate group
+function isImmediateChild(parentPfx, childPfx, allGroups) {
+  if (!childPfx.startsWith(parentPfx + '_')) return false;
+  return !allGroups.some(g =>
+    g.prefix !== parentPfx && g.prefix !== childPfx &&
+    childPfx.startsWith(g.prefix + '_') && g.prefix.startsWith(parentPfx + '_')
+  );
+}
+
+function buildArraySection(tpl, rawFull, row, pfx, fields, keyName, arrGroups, parentCtx) {
+  // Resolve colBase: the indexed column prefix in the row data
+  let colBase = pfx;
+  if (parentCtx) {
+    const immediateParent = arrGroups
+      .filter(g => g.prefix !== pfx && pfx.startsWith(g.prefix + '_'))
+      .sort((a, b) => b.prefix.length - a.prefix.length)[0];
+    if (immediateParent) colBase = parentCtx + '_' + pfx.slice(immediateParent.prefix.length + 1);
+  }
+
+  // Count items: from direct field columns or child array columns
+  let maxIdx = -1;
+  if (fields.length > 0) {
+    for (const col of Object.keys(row)) {
+      const m = col.match(new RegExp('^' + escR(colBase) + '_(\\d+)(?:_|$)'));
+      if (m) maxIdx = Math.max(maxIdx, parseInt(m[1]));
     }
-  return '{}';
-}
+  } else {
+    // No direct variables — count from child array columns
+    for (const col of Object.keys(row)) {
+      const m = col.match(new RegExp('^' + escR(colBase) + '_(\\d+)_'));
+      if (m) maxIdx = Math.max(maxIdx, parseInt(m[1]));
+    }
+  }
 
-function replaceArrSection(tpl, fields, repl) {
-  const v = fields[0].varName;
-  const pat = new RegExp(`\\[\\s*\\{[^\\[\\]]*{{${escR(v)}}}[^\\[\\]]*\\}\\s*\\]`,'s');
-  return tpl.replace(pat, repl);
+  // Replace this array's block in src with repl
+  // Use var-based lookup first (exact position) to avoid key-name collisions
+  // e.g. two arrays both named "schedule" at different nesting levels
+  const replaceBlock = (src, repl) => {
+    if (fields.length > 0) {
+      const blk = _findArrayBlockByVar(src, fields[0].varName);
+      if (blk) return src.slice(0, blk.start) + repl + src.slice(blk.end + 1);
+    }
+    const blk = _findArrayBlockByKey(src, keyName);
+    if (blk) return src.slice(0, blk.start) + repl + src.slice(blk.end + 1);
+    return src;
+  };
+
+  if (maxIdx < 0) return replaceBlock(tpl, '[]');
+
+  // Always get item template from rawFull (original, unsubstituted)
+  // Find the correct array block — verify it contains our variable to avoid key-name collisions
+  let itemTplStr;
+  if (fields.length > 0) {
+    // Find the key-named block that actually contains our field variable
+    let searchFrom = 0;
+    itemTplStr = null;
+    while (true) {
+      const blk = _findArrayBlockByKey(rawFull, keyName, searchFrom);
+      if (!blk) break;
+      const candidate = _extractFirstObject(rawFull, blk);
+      if (candidate && candidate.includes('{{' + fields[0].varName + '}}')) {
+        itemTplStr = candidate; break;
+      }
+      searchFrom = blk.end + 1;
+    }
+  } else {
+    const blk = _findArrayBlockByKey(rawFull, keyName);
+    itemTplStr = blk ? _extractFirstObject(rawFull, blk) : null;
+  }
+  if (!itemTplStr) return tpl;
+
+  const items = [];
+  for (let idx = 0; idx <= maxIdx; idx++) {
+    let itemTpl = itemTplStr;
+    let hasAnyVal = true;
+
+    if (fields.length > 0) {
+      let firstFieldEmpty = false;
+      hasAnyVal = false;
+      for (let fi = 0; fi < fields.length; fi++) {
+        const f = fields[fi];
+        const sfx = f.varName.startsWith(pfx + '_') ? f.varName.slice(pfx.length + 1) : f.varName;
+        const col = colBase + '_' + idx + '_' + sfx;
+        const val = row[col] ?? null;
+        if (fi === 0 && (val === null || val === '')) { firstFieldEmpty = true; break; }
+        if (val !== null && val !== '') hasAnyVal = true;
+        const rep = (val === null || val === '') ? 'null' : JSON.stringify(coerce(val));
+        itemTpl = itemTpl.replace(new RegExp('"{{' + escR(f.varName) + '}}"', 'g'), rep);
+        itemTpl = itemTpl.replace(new RegExp('{{' + escR(f.varName) + '}}', 'g'), rep);
+      }
+      if (firstFieldEmpty) break;
+    }
+
+    // Recurse into IMMEDIATE children only (not all descendants)
+    const ctxForNested = colBase + '_' + idx;
+    for (const ag of arrGroups) {
+      if (isImmediateChild(pfx, ag.prefix, arrGroups)) {
+        itemTpl = buildArraySection(itemTpl, rawFull, row, ag.prefix, ag.fields, ag.keyName, arrGroups, ctxForNested);
+      }
+    }
+
+    if (hasAnyVal) items.push(itemTpl);
+  }
+
+  const arrStr = items.length ? '[' + items.join(',') + ']' : '[]';
+  return replaceBlock(tpl, arrStr);
 }
 
 function coerce(val) {
@@ -1277,7 +1599,6 @@ function coerce(val) {
   return s;
 }
 
-// Mask auth/sensitive keys in a payload object (deep clone, safe for display/export)
 function maskPayload(obj) {
   if (!obj) return obj;
   const MASK = ['auth_key','authkey','password','secret','token','client_no','client_number'];
@@ -1285,8 +1606,7 @@ function maskPayload(obj) {
     if (Array.isArray(o)) return o.map(walk);
     if (o && typeof o==='object') {
       const r={};
-      for (const [k,v] of Object.entries(o))
-        r[k] = MASK.includes(k.toLowerCase()) ? '***' : walk(v);
+      for (const [k,v] of Object.entries(o)) r[k] = MASK.includes(k.toLowerCase()) ? '***' : walk(v);
       return r;
     }
     return o;
@@ -1303,21 +1623,66 @@ function refreshPreview() {
     const endpoint = document.getElementById('cfgEndpoint').value.trim();
     const full = { rest_call: apiName, ...payload };
     document.getElementById('payPre').textContent = JSON.stringify(maskPayload(full),null,2)
-      + `\n\n// Endpoint: ${endpoint}`;
+      + '\n\n// Endpoint: '+endpoint;
   } catch(e) {
     document.getElementById('payPre').textContent = 'Error: '+e.message;
   }
 }
 
 // ═══════════════════════════════════════════════════════════════
+// VALIDATION
+// ═══════════════════════════════════════════════════════════════
+const DATE_PATTERNS = {
+  'YYYY-MM-DD': /^\d{4}-\d{2}-\d{2}$/,
+  'MM/DD/YYYY': /^\d{2}\/\d{2}\/\d{4}$/,
+  'DD/MM/YYYY': /^\d{2}\/\d{2}\/\d{4}$/,
+  'MM-DD-YYYY': /^\d{2}-\d{2}-\d{4}$/,
+  'YYYYMMDD':   /^\d{8}$/,
+  'DD-MMM-YYYY': /^\d{2}-[A-Za-z]{3}-\d{4}$/,
+};
+
+function validateRow(row, rowIndex, idCols) {
+  const errors = [];
+  const idVal = idCols.length
+    ? idCols.map(c=>row[c]??'').filter(Boolean).join(' | ') || 'row-'+rowIndex
+    : 'row-'+rowIndex;
+
+  let payload = null;
+  try { payload = buildPayload(row); } catch(e) {
+    errors.push('Row '+rowIndex+' ['+idVal+'] — payload build error: '+e.message);
+    return {errors, idVal};
+  }
+
+  for (const varName of (S.mandatoryFields||new Set())) {
+    const m = S.maps[varName];
+    if (!m) continue;
+    let val = m.type === 'const' ? m.value : (row[m.value] ?? null);
+    if (val === null || val === '' || val === undefined)
+      errors.push('Row '+rowIndex+' ['+idVal+'] — Mandatory field missing: {{'+varName+'}}');
+  }
+
+  for (const [varName, fmt] of Object.entries(S.dateFields||{})) {
+    if (!fmt) continue;
+    const m = S.maps[varName];
+    if (!m) continue;
+    let val = m.type === 'const' ? m.value : (row[m.value] ?? null);
+    if (val === null || val === '' || val === undefined) continue;
+    const pat = DATE_PATTERNS[fmt];
+    if (pat && !pat.test(String(val).trim()))
+      errors.push('Row '+rowIndex+' ['+idVal+'] — Date format mismatch {{'+varName+'}}: "'+val+'" ≠ '+fmt);
+  }
+
+  return {errors, idVal, payload};
+}
+
+// ═══════════════════════════════════════════════════════════════
 // EXECUTION
 // ═══════════════════════════════════════════════════════════════
-async function startRun() {
+async function startRun(forceDry) {
   if (S.running) return;
-
   const endpoint = document.getElementById('cfgEndpoint').value.trim();
   const apiName  = document.getElementById('cfgApiName').value.trim();
-  const dry      = document.getElementById('cfgDry').checked;
+  const dry      = forceDry === true;
   const onFail   = document.getElementById('cfgOnFail').value;
   const batch    = parseInt(document.getElementById('cfgBatch').value)||10;
   const delay    = parseInt(document.getElementById('cfgDelay').value)||0;
@@ -1325,33 +1690,56 @@ async function startRun() {
   const timeout  = parseInt(document.getElementById('cfgTimeout').value)||30000;
   const concurr  = parseInt(document.getElementById('cfgConcurrency').value)||3;
   const idCols   = getSelectedIds();
-  
+
   if (!endpoint) { toast('Enter endpoint URL','error'); goPage(0); return; }
   if (!apiName)  { toast('Enter API name','error'); goPage(0); return; }
   const rows = S.sheets[S.sheet]||[];
   if (!rows.length) { toast('No data rows','error'); return; }
 
-  S.running=true; S.stop=false; S.results=[];
+  S.running=true; S.stop=false; S.paused=false; S.results=[]; S.pg=0;
   itab('console');
   setStatus('running');
   document.getElementById('runBtn').disabled=true;
+  document.getElementById('dryRunBtn').disabled=true;
   document.getElementById('stopBtn').style.display='inline-flex';
-  document.getElementById('stopBtn').disabled=false;
+  document.getElementById('resumeBtn').style.display='none';
+  document.getElementById('abortBtn').style.display='none';
   document.getElementById('progWrap').classList.add('show');
   document.getElementById('consoleEl').innerHTML='';
   S.logN=0; document.getElementById('logBdg').textContent='0';
 
-  log('INFO',`Starting — ${rows.length} rows · batch ${batch} · concurrency ${concurr}${dry?' [DRY RUN]':''}`);
-  log('INFO',`API: ${apiName} | Identifiers: ${idCols.join(', ')||'none'}`);
+  log('INFO','Starting — '+rows.length+' rows · batch '+batch+' · concurrency '+concurr+(dry?' [DRY RUN]':''));
+  log('INFO','API: '+apiName+' | Identifiers: '+(idCols.join(', ')||'none'));
+  if (dry) log('INFO','🔍 Dry Run: endpoint ping + field validation only — no records created');
   refreshPreview();
+
+  if (dry) {
+    log('DBG','Pinging endpoint for connectivity…');
+    try {
+      const ctrl = new AbortController();
+      const tmr = setTimeout(()=>ctrl.abort(), 8000);
+      const pr = await fetch(PROXY_URL, {
+        method:'POST',
+        headers:{'Content-Type':'application/json','x-target-url':endpoint},
+        body: JSON.stringify({rest_call:'__ping__'}),
+        signal: ctrl.signal
+      });
+      clearTimeout(tmr);
+      log('OK','Endpoint reachable — HTTP '+pr.status);
+    } catch(e) {
+      log('WARN','Endpoint ping failed: '+e.message+' (continuing validation)');
+    }
+  }
 
   const total=rows.length;
   let processed=0;
 
   for (let i=0; i<rows.length; i+=batch) {
-    if (S.stop) { log('WARN','Stopped by user'); break; }
+    if (S.stop) { log('WARN','Aborted by user'); break; }
+    while (S.paused && !S.stop) { await sleep(300); }
+    if (S.stop) { log('WARN','Aborted after resume'); break; }
     const slice = rows.slice(i, i+batch);
-    log('DBG',`Batch ${Math.ceil((i+1)/batch)} — rows ${i+1}–${Math.min(i+batch,total)}`);
+    log('DBG','Batch '+Math.ceil((i+1)/batch)+' — rows '+(i+1)+'–'+Math.min(i+batch,total));
 
     const batchRes = await concPool(slice, concurr, (row,bi) =>
       execRow(row, i+bi+2, apiName, endpoint, retries, timeout, dry, idCols)
@@ -1360,34 +1748,60 @@ async function startRun() {
     for (const r of batchRes) {
       S.results.push(r);
       processed++;
-      if (onFail==='stop' && r.status==='FAILURE') { S.stop=true; log('ERR',`Stop-on-failure at row ${r.rowIndex}`); break; }
+      if (onFail==='stop' && r.status==='FAILURE') { S.stop=true; log('ERR','Stop-on-failure at row '+r.rowIndex); break; }
     }
 
     updateStats(); renderResults(S.results);
     document.getElementById('resBadgeNav').textContent = S.results.length;
     document.getElementById('resBdg').textContent = S.results.length;
-
     const pct = Math.round((processed/total)*100);
     document.getElementById('progFill').style.width=pct+'%';
     document.getElementById('progPct').textContent=pct+'%';
-    document.getElementById('progTxt').textContent=`${processed} / ${total}`;
+    document.getElementById('progTxt').textContent=processed+' / '+total;
 
     if (S.stop) break;
-    if (delay>0 && i+batch<rows.length) await sleep(delay);
+    if (!dry && delay>0 && i+batch<rows.length) await sleep(delay);
   }
 
   const ok=S.results.filter(r=>r.status==='SUCCESS').length;
   const fail=S.results.filter(r=>r.status!=='SUCCESS').length;
-  log('OK',`Done — ${ok} success, ${fail} failed of ${S.results.length} processed`);
+  log('OK','Done — '+ok+' success, '+fail+' failed of '+S.results.length+' processed');
   setStatus(fail>0?'error':'done');
-  S.running=false;
+  S.running=false; S.paused=false;
   document.getElementById('runBtn').disabled=false;
+  document.getElementById('dryRunBtn').disabled=false;
   document.getElementById('stopBtn').style.display='none';
+  document.getElementById('resumeBtn').style.display='none';
+  document.getElementById('abortBtn').style.display='none';
   itab('results');
-  toast(`Done: ${ok}✓  ${fail}✗`,'info');
+  const validFails = S.results.filter(r=>r.status==='VALIDATION_ERROR').length;
+  toast('Done: '+ok+'✓  '+(fail-validFails)+'✗  '+validFails+'⚠','info');
 }
 
-function stopRun() { S.stop=true; document.getElementById('stopBtn').disabled=true; }
+function pauseRun() {
+  S.paused=true;
+  document.getElementById('stopBtn').style.display='none';
+  document.getElementById('resumeBtn').style.display='inline-flex';
+  document.getElementById('abortBtn').style.display='inline-flex';
+  log('WARN','Execution paused — click Resume or Abort');
+  setStatus('running');
+}
+
+function resumeRun() {
+  S.paused=false;
+  document.getElementById('resumeBtn').style.display='none';
+  document.getElementById('abortBtn').style.display='none';
+  document.getElementById('stopBtn').style.display='inline-flex';
+  log('INFO','Execution resumed');
+}
+
+function abortRun() {
+  S.stop=true; S.paused=false;
+  document.getElementById('resumeBtn').style.display='none';
+  document.getElementById('abortBtn').style.display='none';
+  document.getElementById('stopBtn').style.display='none';
+  log('WARN','Execution aborted by user');
+}
 
 async function concPool(items, limit, fn) {
   const res=new Array(items.length); let idx=0;
@@ -1399,20 +1813,27 @@ async function concPool(items, limit, fn) {
 async function execRow(row, rowIndex, apiName, endpoint, maxRetries, timeout, dry, idCols) {
   const t0=Date.now();
   const idVal = idCols.length
-    ? idCols.map(c=>row[c]??'').filter(Boolean).join(' | ') || `row-${rowIndex}`
-    : `row-${rowIndex}`;
+    ? idCols.map(c=>row[c]??'').filter(Boolean).join(' | ') || 'row-'+rowIndex
+    : 'row-'+rowIndex;
 
   let payload;
   try { payload=buildPayload(row); }
   catch(e) {
-    log('WARN',`Row ${rowIndex} [${idVal}] — build error: ${e.message}`);
+    log('WARN','Row '+rowIndex+' ['+idVal+'] — build error: '+e.message);
     return mk(rowIndex,idVal,'VALIDATION_ERROR',e.message,null,null,payload,0,Date.now()-t0);
+  }
+
+  const {errors: validErrs} = validateRow(row, rowIndex, idCols);
+  if (validErrs.length) {
+    const errMsg = validErrs.map(e => e.replace('Row '+rowIndex+' ['+idVal+'] — ','')).join('; ');
+    log('WARN','Row '+rowIndex+' ['+idVal+'] — VALIDATION: '+errMsg);
+    return mk(rowIndex,idVal,'VALIDATION_ERROR',errMsg,null,null,payload,0,Date.now()-t0);
   }
 
   const body={rest_call:apiName,...payload};
 
   if (dry) {
-    log('DBG',`Row ${rowIndex} [${idVal}] — dry run OK`);
+    log('DBG','Row '+rowIndex+' ['+idVal+'] — dry run ✓ (validation passed)');
     return mk(rowIndex,idVal,'SUCCESS',null,null,{dry_run:true},payload,0,Date.now()-t0);
   }
 
@@ -1421,19 +1842,23 @@ async function execRow(row, rowIndex, apiName, endpoint, maxRetries, timeout, dr
       if (att>0) { await sleep(Math.min(1000*2**(att-1)+Math.random()*300,15000)); }
       const ctrl=new AbortController();
       const tmr=setTimeout(()=>ctrl.abort(),timeout);
-      const res=await fetch(PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json',"x-target-url": endpoint},body:JSON.stringify(body),signal:ctrl.signal});
+      const res=await fetch(PROXY_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json','x-target-url':endpoint},
+        body:JSON.stringify(body),
+        signal:ctrl.signal
+      });
       clearTimeout(tmr);
       let data; try{data=await res.json();}catch(e){data={raw:await res.text()};}
-
       if (!res.ok||(data.error_code&&data.error_code!==0)) {
-        const e=new Error(data.error_msg||data.message||`HTTP ${res.status}`);
+        const e=new Error(data.error_msg||data.message||'HTTP '+res.status);
         e.code=data.error_code||res.status; e.resp=data; throw e;
       }
-      log('OK',`Row ${rowIndex} [${idVal}] ✓${att>0?` (${att}r)`:''}  ${Date.now()-t0}ms`);
+      log('OK','Row '+rowIndex+' ['+idVal+'] ✓'+(att>0?' ('+att+'r)':'')+'  '+(Date.now()-t0)+'ms');
       return mk(rowIndex,idVal,'SUCCESS',null,null,data,payload,att,Date.now()-t0);
     } catch(e) {
       if (att===maxRetries) {
-        log('ERR',`Row ${rowIndex} [${idVal}] — ${e.message}`);
+        log('ERR','Row '+rowIndex+' ['+idVal+'] — '+e.message);
         return mk(rowIndex,idVal,'FAILURE',e.message,e.code||null,e.resp||null,payload,att,Date.now()-t0);
       }
     }
@@ -1442,8 +1867,8 @@ async function execRow(row, rowIndex, apiName, endpoint, maxRetries, timeout, dr
 
 function mk(rowIndex,idVal,status,errorMessage,ariaCode,response,payload,retries,durationMs) {
   return {rowIndex,idVal,status,errorMessage:errorMessage||null,ariaCode:ariaCode||null,
-    response: response?JSON.stringify(maskPayload(response)):null,
-    payload:  payload ?JSON.stringify(maskPayload(payload)):null,
+    response:response?JSON.stringify(maskPayload(response)):null,
+    payload:payload?JSON.stringify(maskPayload(payload)):null,
     retries,durationMs,ts:new Date().toISOString()};
 }
 
@@ -1454,15 +1879,22 @@ function log(level, msg) {
   const el=document.getElementById('consoleEl');
   const t=new Date().toTimeString().slice(0,8);
   const d=document.createElement('div'); d.className='lr';
-  d.innerHTML=`<span class="lt">${t}</span><span class="ll ${level}">${level}</span><span class="lm">${escH(msg)}</span>`;
+  d.innerHTML='<span class="lt">'+t+'</span><span class="ll '+level+'">'+level+'</span><span class="lm">'+escH(msg)+'</span>';
   el.appendChild(d); el.scrollTop=el.scrollHeight;
   document.getElementById('logBdg').textContent=++S.logN;
 }
 
 let curFilt='ALL';
 function filt(f) {
-  curFilt=f;
-  document.getElementById('filtLbl').textContent = f==='ALL'?'':`Filter: ${f}`;
+  curFilt=f; S.pg=0;
+  document.getElementById('filtLbl').textContent = f==='ALL'?'':'Filter: '+f;
+  renderResults(S.results);
+}
+
+function pgNav(dir) {
+  const list = curFilt==='ALL' ? S.results : S.results.filter(r=>r.status===curFilt);
+  const pages = Math.max(1, Math.ceil(list.length/S.PG_SIZE));
+  S.pg = Math.max(0, Math.min(pages-1, S.pg+dir));
   renderResults(S.results);
 }
 
@@ -1470,44 +1902,55 @@ function renderResults(results) {
   document.getElementById('resBdg').textContent=results.length;
   const list = curFilt==='ALL' ? results : results.filter(r=>r.status===curFilt);
   const wrap = document.getElementById('resWrap');
-
   if (!list.length) {
-    wrap.innerHTML=`<div class="empty"><div class="empty-ico">📋</div><div class="empty-msg">${results.length?'No records match filter':'No results yet'}</div></div>`;
+    wrap.innerHTML='<div class="empty"><div class="empty-ico">📋</div><div class="empty-msg">'+(results.length?'No records match filter':'No results yet')+'</div></div>';
+    document.getElementById('pgLbl').textContent='—';
+    document.getElementById('pgPrev').disabled=true;
+    document.getElementById('pgNext').disabled=true;
     return;
   }
+  const pages=Math.max(1,Math.ceil(list.length/S.PG_SIZE));
+  S.pg=Math.max(0,Math.min(pages-1,S.pg));
+  const pageList=list.slice(S.pg*S.PG_SIZE,(S.pg+1)*S.PG_SIZE);
+  document.getElementById('pgLbl').textContent=(S.pg+1)+'/'+pages+' ('+list.length+' total)';
+  document.getElementById('pgPrev').disabled=S.pg<=0;
+  document.getElementById('pgNext').disabled=S.pg>=pages-1;
 
-  // Dynamic identifier header
-  const idCols = getSelectedIds();
-  const idHeader = idCols.length ? idCols.join(' + ') : 'Identifier';
+  const idCols=getSelectedIds();
+  const idHeader=idCols.length?idCols.join(' + '):'Identifier';
 
-  let h=`<table class="res-table"><thead><tr>
-    <th>Row</th><th>${escH(idHeader)}</th><th>Status</th>
-    <th>Error</th><th>Aria Code</th><th>Retries</th><th>ms</th><th>Time</th>
-  </tr></thead><tbody>`;
-  for (const r of list) {
-    const pc = r.status==='SUCCESS'?'pill-S':r.status==='FAILURE'?'pill-F':'pill-V';
-    const eshort=(r.errorMessage||'').slice(0,55)+((r.errorMessage||'').length>55?'…':'');
-    h+=`<tr>
-      <td class="mono">${r.rowIndex}</td>
-      <td class="mono" title="${escH(r.idVal)}">${escH(String(r.idVal).slice(0,40))}</td>
-      <td><span class="pill ${pc}">${r.status}</span></td>
-      <td title="${escH(r.errorMessage||'')}">${escH(eshort)}</td>
-      <td class="mono">${r.ariaCode??''}</td>
-      <td class="mono">${r.retries}</td>
-      <td class="mono">${r.durationMs}</td>
-      <td class="mono">${r.ts?.slice(11,19)}</td>
-    </tr>`;
+  let h='<table class="res-table"><thead><tr>'
+    +'<th>Row</th><th>'+escH(idHeader)+'</th><th>Status</th>'
+    +'<th>Error</th><th>Aria Code</th><th>Retries</th><th>ms</th><th>Time</th>'
+    +'</tr></thead><tbody>';
+  for (const r of pageList) {
+    const pc=r.status==='SUCCESS'?'pill-S':r.status==='FAILURE'?'pill-F':'pill-V';
+    const eshort=(r.errorMessage||'').slice(0,60)+((r.errorMessage||'').length>60?'…':'');
+    h+='<tr>'
+      +'<td class="mono">'+r.rowIndex+'</td>'
+      +'<td class="mono" title="'+escH(r.idVal)+'">'+escH(String(r.idVal).slice(0,40))+'</td>'
+      +'<td><span class="pill '+pc+'">'+r.status+'</span></td>'
+      +'<td title="'+escH(r.errorMessage||'')+'">'+escH(eshort)+'</td>'
+      +'<td class="mono">'+(r.ariaCode??'')+'</td>'
+      +'<td class="mono">'+r.retries+'</td>'
+      +'<td class="mono">'+r.durationMs+'</td>'
+      +'<td class="mono">'+(r.ts?.slice(11,19)||'')+'</td>'
+      +'</tr>';
   }
   h+='</tbody></table>';
   wrap.innerHTML=h;
 }
 
 function updateStats() {
-  const t=S.results.length, ok=S.results.filter(r=>r.status==='SUCCESS').length;
-  const fail=t-ok, avg=t?Math.round(S.results.reduce((s,r)=>s+(r.durationMs||0),0)/t):0;
+  const t=S.results.length;
+  const ok=S.results.filter(r=>r.status==='SUCCESS').length;
+  const validErr=S.results.filter(r=>r.status==='VALIDATION_ERROR').length;
+  const fail=S.results.filter(r=>r.status==='FAILURE').length;
+  const avg=t?Math.round(S.results.reduce((s,r)=>s+(r.durationMs||0),0)/t):0;
   document.getElementById('sTot').textContent=t;
   document.getElementById('sOk').textContent=ok;
   document.getElementById('sFail').textContent=fail;
+  document.getElementById('sValidErr').textContent=validErr;
   document.getElementById('sRate').textContent=t?((ok/t)*100).toFixed(1)+'%':'—';
   document.getElementById('sAvg').textContent=t?avg+'ms':'—';
 }
@@ -1521,47 +1964,39 @@ function dlReport() {
   const api=document.getElementById('cfgApiName').value;
   const t=S.results.length, ok=S.results.filter(r=>r.status==='SUCCESS').length;
   const idCols=getSelectedIds();
-
-  // Summary sheet
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([
     ['Metric','Value'],
-    ['Run Date', new Date().toLocaleString()],
-    ['API', api],
-    ['Endpoint', document.getElementById('cfgEndpoint').value],
-    ['Sheet', S.sheet||'—'],
-    ['Total Records', t],
-    ['Successful', ok],
-    ['Failed', t-ok],
-    ['Success Rate', t?((ok/t)*100).toFixed(1)+'%':'N/A'],
-    ['Identifier Columns', idCols.join(', ')||'none'],
+    ['Run Date',new Date().toLocaleString()],
+    ['API',api],
+    ['Endpoint',document.getElementById('cfgEndpoint').value],
+    ['Sheet',S.sheet||'—'],
+    ['Total Records',t],
+    ['Successful',ok],
+    ['Failed',t-ok],
+    ['Success Rate',t?((ok/t)*100).toFixed(1)+'%':'N/A'],
+    ['Identifier Columns',idCols.join(', ')||'none'],
   ]), 'Summary');
-
-  // All records (single sheet — users filter in Excel)
-  const idHdr = idCols.length ? idCols.join(' + ') : 'Identifier';
-  const hdr=['Row #', idHdr, 'Status', 'Error Message', 'Aria Error Code', 'Retries', 'Duration (ms)', 'Timestamp', 'Request Payload (JSON)', 'Response (JSON)'];
-  const makeRows = arr => arr.map(r=>[
-    r.rowIndex, r.idVal, r.status,
-    r.errorMessage||'', r.ariaCode||'',
-    r.retries, r.durationMs, r.ts,
-    r.payload||'', r.response||''  // already masked at capture time
-  ]);
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([hdr,...makeRows(S.results)]), 'Execution Results');
-
+  const idHdr=idCols.length?idCols.join(' + '):'Identifier';
+  const hdr=['Row #',idHdr,'Status','Error Message','Aria Error Code','Retries','Duration (ms)','Timestamp','Request Payload (JSON)','Response (JSON)'];
+  const rows=S.results.map(r=>[r.rowIndex,r.idVal,r.status,r.errorMessage||'',r.ariaCode||'',r.retries,r.durationMs,r.ts,r.payload||'',r.response||'']);
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([hdr,...rows]), 'Execution Results');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([hdr,...rows.filter((_,i)=>S.results[i].status==='FAILURE')]), 'Failures');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([hdr,...rows.filter((_,i)=>S.results[i].status==='VALIDATION_ERROR')]), 'Validation Errors');
   const ts=new Date().toISOString().slice(0,19).replace(/[T:]/g,'-');
-  XLSX.writeFile(wb, `aria_report_${api}_${ts}.xlsx`);
-  toast('Report exported','success');
+  XLSX.writeFile(wb, 'aria_report_'+api+'_'+ts+'.xlsx');
+  toast('Report exported with Failures & Validation tabs','success');
 }
 
 function dlJson() {
   if (!S.results.length) { toast('No results to export','error'); return; }
   const blob=new Blob([JSON.stringify(S.results,null,2)],{type:'application/json'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-  a.download=`aria_results_${new Date().toISOString().slice(0,10)}.json`; a.click();
+  a.download='aria_results_'+new Date().toISOString().slice(0,10)+'.json'; a.click();
   toast('JSON exported','success');
 }
 
 // ═══════════════════════════════════════════════════════════════
-// SAVED CONFIGS  (persisted in localStorage)
+// SAVED CONFIGS
 // ═══════════════════════════════════════════════════════════════
 function gatherCfg() {
   return {
@@ -1573,10 +2008,12 @@ function gatherCfg() {
     timeout:  document.getElementById('cfgTimeout').value,
     concurr:  document.getElementById('cfgConcurrency').value,
     onFail:   document.getElementById('cfgOnFail').value,
-    dry:      document.getElementById('cfgDry').checked,
     payload:  document.getElementById('jed').value,
     maps:     JSON.parse(JSON.stringify(S.maps)),
     idCols:   getSelectedIds(),
+    mandatoryFields: [...(S.mandatoryFields||new Set())],
+    dateFields: Object.assign({}, S.dateFields||{}),
+    defaultDateFmt: document.getElementById('cfgDefaultDateFmt')?.value||'',
   };
 }
 
@@ -1590,14 +2027,17 @@ function applyCfg(cfg) {
   document.getElementById('cfgTimeout').value    = cfg.timeout||30000;
   document.getElementById('cfgConcurrency').value= cfg.concurr||3;
   document.getElementById('cfgOnFail').value     = cfg.onFail||'continue';
-  document.getElementById('cfgDry').checked      = cfg.dry||false;
+  if (cfg.defaultDateFmt && document.getElementById('cfgDefaultDateFmt'))
+    document.getElementById('cfgDefaultDateFmt').value = cfg.defaultDateFmt;
   if (cfg.payload) { document.getElementById('jed').value=cfg.payload; onJedChange(); }
   if (cfg.maps) { S.maps=cfg.maps; renderMapper(); }
-  // Restore id col selections after checklist exists
+  if (cfg.mandatoryFields) S.mandatoryFields=new Set(cfg.mandatoryFields);
+  if (cfg.dateFields) S.dateFields=Object.assign({},cfg.dateFields);
+  if (S.vars.length) renderValidationConfig(S.vars);
   if (cfg.idCols?.length) {
     setTimeout(()=>{
       document.querySelectorAll('#idChecklist input').forEach(cb=>{
-        cb.checked = cfg.idCols.includes(cb.value);
+        cb.checked=cfg.idCols.includes(cb.value);
       });
       updateIdTags();
     },50);
@@ -1617,20 +2057,20 @@ function doSave() {
   if (!name) { toast('Enter a config name','error'); return; }
   const entry={id:Date.now().toString(),name,notes:document.getElementById('saveNotes').value.trim(),cfg:gatherCfg(),ts:new Date().toLocaleString()};
   S.saved.push(entry); persist(); renderCfgList();
-  closeMod('saveModal'); toast(`Config "${name}" saved`,'success');
+  closeMod('saveModal'); toast('Config "'+name+'" saved','success');
 }
 
 function loadCfg(id) {
   const c=S.saved.find(x=>x.id===id); if (!c) return;
   applyCfg(c.cfg);
   document.querySelectorAll('.cfg-item').forEach(el=>el.classList.toggle('active',el.dataset.id===id));
-  toast(`Config "${c.name}" loaded`,'info');
+  toast('Config "'+c.name+'" loaded','info');
 }
 
 function updateCfg(id) {
   const idx=S.saved.findIndex(x=>x.id===id); if (idx<0) return;
   S.saved[idx].cfg=gatherCfg(); S.saved[idx].ts=new Date().toLocaleString();
-  persist(); renderCfgList(); toast(`Config "${S.saved[idx].name}" updated`,'success');
+  persist(); renderCfgList(); toast('Config "'+S.saved[idx].name+'" updated','success');
 }
 
 function delCfg(id) {
@@ -1640,21 +2080,22 @@ function delCfg(id) {
 function renderCfgList() {
   const wrap=document.getElementById('cfgList');
   if (!S.saved.length) {
-    wrap.innerHTML=`<div class="empty" style="padding:16px;"><div class="empty-ico">📂</div><div class="empty-msg" style="font-size:11px;">No saved configs.<br>Go to Execute tab and click Save Config.</div></div>`;
+    wrap.innerHTML='<div class="empty" style="padding:16px 0;"><div class="empty-ico">📂</div><div class="empty-msg" style="font-size:11px;">No saved configs yet.<br>Execute a run and save it.</div></div>';
     return;
   }
-  wrap.innerHTML=S.saved.map(c=>`
-    <div class="cfg-item" data-id="${c.id}" onclick="loadCfg('${c.id}')">
-      <div style="flex:1;min-width:0;">
-        <div class="cfg-name">${escH(c.name)}</div>
-        <div class="cfg-meta">${escH(c.cfg.apiName||'—')} · ${escH(c.ts)}</div>
-        ${c.notes?`<div class="cfg-meta">${escH(c.notes)}</div>`:''}
-      </div>
-      <div class="cfg-acts" onclick="event.stopPropagation()">
-        <button class="btn btn-ghost btn-xs" onclick="updateCfg('${c.id}')" title="Overwrite with current">↻</button>
-        <button class="btn btn-danger btn-xs" onclick="delCfg('${c.id}')" title="Delete">✕</button>
-      </div>
-    </div>`).join('');
+  wrap.innerHTML=S.saved.map(c=>
+    '<div class="cfg-item" data-id="'+c.id+'" onclick="loadCfg(\''+c.id+'\')">'
+    + '<div style="flex:1;min-width:0;">'
+    + '<div class="cfg-name">'+escH(c.name)+'</div>'
+    + '<div class="cfg-meta">'+escH(c.cfg.apiName||'—')+' · '+escH(c.ts)+'</div>'
+    + (c.notes?'<div class="cfg-meta">'+escH(c.notes)+'</div>':'')
+    + '</div>'
+    + '<div style="display:flex;gap:4px;flex-shrink:0;" onclick="event.stopPropagation()">'
+    + '<button class="btn btn-ghost btn-xs" onclick="updateCfg(\''+c.id+'\')" title="Overwrite with current">↻</button>'
+    + '<button class="btn btn-danger btn-xs" onclick="delCfg(\''+c.id+'\')" title="Delete">✕</button>'
+    + '</div>'
+    + '</div>'
+  ).join('');
 }
 
 function persist() { try{localStorage.setItem('aria_bl_v2',JSON.stringify(S.saved));}catch(e){} }
@@ -1681,7 +2122,7 @@ function importCfg(inp) {
         S.saved.push(c);
       });
       persist(); renderCfgList();
-      toast(`Imported ${arr.length} config(s)`,'success');
+      toast('Imported '+arr.length+' config(s)','success');
     } catch(e){toast('Import failed: '+e.message,'error');}
   };
   r.readAsText(f);
@@ -1691,17 +2132,19 @@ function importCfg(inp) {
 // HELPERS
 // ═══════════════════════════════════════════════════════════════
 function resetAll() {
-  S.sheets={}; S.sheet=null; S.cols=[]; S.vars=[]; S.maps={}; S.results=[]; S.running=false; S.logN=0;
-  document.getElementById('dzBadge').innerHTML='';
+  S.sheets={}; S.sheet=null; S.cols=[]; S.vars=[]; S.maps={}; S.results=[];
+  S.running=false; S.logN=0; S.mandatoryFields=new Set(); S.dateFields={};
+  fileIn.value='';
+  document.getElementById('dzBadgeWrap').style.display='none';
   document.getElementById('sheetWrap').style.display='none';
   document.getElementById('idWrap').style.display='none';
-  document.getElementById('consoleEl').innerHTML='<div class="empty" style="padding:20px;"><div class="empty-ico" style="color:#1e293b">⬡</div><div class="empty-msg" style="color:#334155">Execution log will appear here</div></div>';
+  document.getElementById('consoleEl').innerHTML='<div class="empty" style="padding:24px;"><div class="empty-ico" style="color:#21262d">⬡</div><div class="empty-msg" style="color:#30363d">Execution log will appear here</div></div>';
   document.getElementById('resWrap').innerHTML='<div class="empty"><div class="empty-ico">📋</div><div class="empty-msg">No results yet</div></div>';
-  document.getElementById('mapBody').innerHTML='<div class="empty"><div class="empty-ico">🗂</div><div class="empty-msg">Paste a payload with variables and upload a file.</div></div>';
+  document.getElementById('mapBody').innerHTML='<div class="empty"><div class="empty-ico">🗂</div><div class="empty-msg">Paste a payload with <code style="color:var(--purple)">{{variables}}</code> and upload a file to map columns here.</div></div>';
   document.getElementById('payPre').textContent='No payload built yet.';
   document.getElementById('progWrap').classList.remove('show');
   document.getElementById('progFill').style.width='0';
-  ['sTot','sOk','sFail'].forEach(i=>document.getElementById(i).textContent='0');
+  ['sTot','sOk','sFail','sValidErr'].forEach(i=>document.getElementById(i).textContent='0');
   ['sRate','sAvg'].forEach(i=>document.getElementById(i).textContent='—');
   ['logBdg','resBdg','resBadgeNav'].forEach(i=>document.getElementById(i).textContent='0');
   document.getElementById('jedStatus').textContent='Paste a JSON payload above';
@@ -1709,8 +2152,16 @@ function resetAll() {
   document.getElementById('jedVarCnt').textContent='';
   document.getElementById('goRunBtn').disabled=true;
   document.getElementById('runBtn').disabled=true;
+  document.getElementById('dryRunBtn').disabled=true;
+  document.getElementById('stopBtn').style.display='none';
+  document.getElementById('resumeBtn').style.display='none';
+  document.getElementById('abortBtn').style.display='none';
   document.getElementById('idBoxes').style.display='none';
-  setStatus(''); fileIn.value=''; curFilt='ALL';
+  S.pg=0;
+  document.getElementById('validCfgEmpty').style.display='block';
+  document.getElementById('validCfgBody').style.display='none';
+  setStatus(''); curFilt='ALL';
+  toast('All state cleared','info');
 }
 
 function setStatus(s) {
@@ -1720,9 +2171,9 @@ function setStatus(s) {
 
 function toast(msg, type='info') {
   const wrap=document.getElementById('toasts');
-  const el=document.createElement('div'); el.className=`toast toast-${type}`;
+  const el=document.createElement('div'); el.className='toast toast-'+type;
   const icon=type==='error'?'✕':type==='success'?'✓':'ℹ';
-  el.innerHTML=`<span>${icon}</span> ${escH(msg)}`;
+  el.innerHTML='<span>'+icon+'</span> '+escH(msg);
   wrap.appendChild(el);
   setTimeout(()=>{el.style.transition='opacity .3s';el.style.opacity='0';setTimeout(()=>el.remove(),300);},3200);
 }
@@ -1731,7 +2182,29 @@ function escH(s) { return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;
 function escR(s) { return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
 function sleep(ms) { return new Promise(r=>setTimeout(r,ms)); }
 
+// ─── THEME ───
+function toggleTheme() {
+  const isLight = document.body.classList.toggle('light');
+  document.getElementById('toggleTrack').classList.toggle('on', isLight);
+  document.getElementById('themeIcon').textContent = isLight ? '☀️' : '🌙';
+  document.getElementById('themeLabel').textContent = isLight ? 'LIGHT' : 'DARK';
+  try { localStorage.setItem('aria_bl_theme', isLight ? 'light' : 'dark'); } catch(e) {}
+}
+
+function applyTheme() {
+  try {
+    const saved = localStorage.getItem('aria_bl_theme');
+    if (saved === 'light') {
+      document.body.classList.add('light');
+      document.getElementById('toggleTrack').classList.add('on');
+      document.getElementById('themeIcon').textContent = '☀️';
+      document.getElementById('themeLabel').textContent = 'LIGHT';
+    }
+  } catch(e) {}
+}
+
 // ─── INIT ───
+applyTheme();
 loadPersisted();
 </script>
 </body>
