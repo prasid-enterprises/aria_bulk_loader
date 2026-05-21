@@ -688,7 +688,7 @@ select option { background: var(--surface2); }
     <div class="card">
       <div class="card-head">
         <span class="card-title">✱ Validation</span>
-        <span style="font-size:10px;color:var(--text-mid);">Configure after loading payload in Mapper tab</span>
+        <span style="font-size:10px;color:var(--text-mid);">Mark mandatory fields after loading payload</span>
       </div>
       <div class="card-body">
         <div id="validCfgEmpty" style="color:var(--text-mid);font-size:11px;">
@@ -936,7 +936,6 @@ const S = {
   stop: false,
   logN: 0,
   mandatoryFields: new Set(),
-  dateFields: {},
   pg: 0,
   PG_SIZE: 500,
 };
@@ -1180,28 +1179,19 @@ function renderValidationConfig(vars) {
   const listEl  = document.getElementById('validFieldList');
   if (!vars || !vars.length) { emptyEl.style.display='block'; bodyEl.style.display='none'; return; }
   emptyEl.style.display='none'; bodyEl.style.display='flex';
-  const DATE_FMTS = ['','YYYY-MM-DD','MM/DD/YYYY','DD/MM/YYYY','MM-DD-YYYY','YYYYMMDD','DD-MMM-YYYY'];
-  listEl.innerHTML = vars.map(v => {
-    const isMand = S.mandatoryFields && S.mandatoryFields.has(v);
-    const dateFmt = S.dateFields?.[v] || '';
-    const fmtOpts = DATE_FMTS.map(f=>'<option value="'+f+'"'+(dateFmt===f?' selected':'')+'>'+( f||'— not a date —')+'</option>').join('');
-    return '<div style="display:flex;align-items:center;gap:8px;padding:3px 0;border-bottom:1px solid var(--surface3);">'
-      + '<input type="checkbox" id="mand_'+v+'" style="width:auto;accent-color:var(--err);flex-shrink:0;" '+(isMand?'checked':'')+' onchange="toggleMandatory(\''+v+'\',this.checked)" title="Mark as mandatory">'
-      + '<span style="font-family:var(--mono);font-size:11px;color:var(--purple);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;" title="{{'+v+'}}">{{'+v+'}}</span>'
-      + '<select style="font-size:10px;padding:2px 4px;border:1px solid var(--border);border-radius:3px;background:var(--surface);color:var(--text);width:140px;flex-shrink:0;" onchange="setDateFmt(\''+v+'\',this.value)">'+fmtOpts+'</select>'
-      + '</div>';
-  }).join('');
+listEl.innerHTML = vars.map(v => {
+  const isMand = S.mandatoryFields && S.mandatoryFields.has(v);
+ return '<div style="display:flex;align-items:center;gap:8px;padding:3px 0;border-bottom:1px solid var(--surface3);">'
+  + '<input type="checkbox" id="mand_'+v+'" style="width:auto;accent-color:var(--err);flex-shrink:0;" '+(isMand?'checked':'')+' onchange="toggleMandatory(\''+v+'\',this.checked)" title="Mark as mandatory">'
+  + '<span style="font-family:var(--mono);font-size:11px;color:var(--purple);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;" title="{{'+v+'}}">{{'+v+'}}</span>'
+  + '</div>';
+}).join('');
 }
 
 function toggleMandatory(v, checked) {
   if (!S.mandatoryFields) S.mandatoryFields = new Set();
   if (checked) S.mandatoryFields.add(v); else S.mandatoryFields.delete(v);
   renderMapper();
-}
-
-function setDateFmt(v, fmt) {
-  if (!S.dateFields) S.dateFields = {};
-  if (fmt) S.dateFields[v] = fmt; else delete S.dateFields[v];
 }
 
 function autoMap() {
@@ -1652,14 +1642,6 @@ function refreshPreview() {
 // ═══════════════════════════════════════════════════════════════
 // VALIDATION
 // ═══════════════════════════════════════════════════════════════
-const DATE_PATTERNS = {
-  'YYYY-MM-DD': /^\d{4}-\d{2}-\d{2}$/,
-  'MM/DD/YYYY': /^\d{2}\/\d{2}\/\d{4}$/,
-  'DD/MM/YYYY': /^\d{2}\/\d{2}\/\d{4}$/,
-  'MM-DD-YYYY': /^\d{2}-\d{2}-\d{4}$/,
-  'YYYYMMDD':   /^\d{8}$/,
-  'DD-MMM-YYYY': /^\d{2}-[A-Za-z]{3}-\d{4}$/,
-};
 
 function validateRow(row, rowIndex, idCols) {
   const errors = [];
@@ -1679,17 +1661,6 @@ function validateRow(row, rowIndex, idCols) {
     let val = m.type === 'const' ? m.value : (row[m.value] ?? null);
     if (val === null || val === '' || val === undefined)
       errors.push('Row '+rowIndex+' ['+idVal+'] — Mandatory field missing: {{'+varName+'}}');
-  }
-
-  for (const [varName, fmt] of Object.entries(S.dateFields||{})) {
-    if (!fmt) continue;
-    const m = S.maps[varName];
-    if (!m) continue;
-    let val = m.type === 'const' ? m.value : (row[m.value] ?? null);
-    if (val === null || val === '' || val === undefined) continue;
-    const pat = DATE_PATTERNS[fmt];
-    if (pat && !pat.test(String(val).trim()))
-      errors.push('Row '+rowIndex+' ['+idVal+'] — Date format mismatch {{'+varName+'}}: "'+val+'" ≠ '+fmt);
   }
 
   return {errors, idVal, payload};
@@ -2032,7 +2003,6 @@ function gatherCfg() {
     maps:     JSON.parse(JSON.stringify(S.maps)),
     idCols:   getSelectedIds(),
     mandatoryFields: [...(S.mandatoryFields||new Set())],
-    dateFields: Object.assign({}, S.dateFields||{}),
     defaultDateFmt: document.getElementById('cfgDefaultDateFmt')?.value||'',
   };
 }
@@ -2052,7 +2022,6 @@ function applyCfg(cfg) {
   if (cfg.payload) { document.getElementById('jed').value=cfg.payload; onJedChange(); }
   if (cfg.maps) { S.maps=cfg.maps; renderMapper(); }
   if (cfg.mandatoryFields) S.mandatoryFields=new Set(cfg.mandatoryFields);
-  if (cfg.dateFields) S.dateFields=Object.assign({},cfg.dateFields);
   if (S.vars.length) renderValidationConfig(S.vars);
   if (cfg.idCols?.length) {
     setTimeout(()=>{
@@ -2153,7 +2122,7 @@ function importCfg(inp) {
 // ═══════════════════════════════════════════════════════════════
 function resetAll() {
   S.sheets={}; S.sheet=null; S.cols=[]; S.vars=[]; S.maps={}; S.results=[];
-  S.running=false; S.logN=0; S.mandatoryFields=new Set(); S.dateFields={};
+  S.running=false; S.logN=0; S.mandatoryFields=new Set();
   fileIn.value='';
   document.getElementById('dzBadgeWrap').style.display='none';
   document.getElementById('sheetWrap').style.display='none';
