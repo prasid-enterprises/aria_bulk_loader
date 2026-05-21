@@ -1404,7 +1404,7 @@ function formatDate(date, fmt) {
     case 'MM-DD-YYYY':  return `${m}-${d}-${y}`;
     case 'YYYYMMDD':    return `${y}${m}${d}`;
     case 'DD-MMM-YYYY': return `${d}-${months[date.getMonth()]}-${y}`;
-    default:            return date.toISOString().slice(0,10);
+    default: return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
   }
 }
 
