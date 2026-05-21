@@ -986,7 +986,7 @@ function loadFile(file) {
     try {
       const wb = ext === 'csv'
         ? XLSX.read(e.target.result, {type:'string'})
-        : XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+        : XLSX.read(new Uint8Array(e.target.result), {type:'array', cellDates:true});
 
       S.sheets = {};
       for (const name of wb.SheetNames) {
@@ -1237,14 +1237,14 @@ function detectArrayGroups(raw) {
     const parsed = JSON.parse(san);
     // Walk each top-level key so parentPrefix starts as the key name
     for (const [k, v] of Object.entries(parsed)) {
-      if (Array.isArray(v)) walkForArrays(v, k, groups);
+      if (Array.isArray(v)) walkForArrays(v, k, groups, k);
     }
   } catch(e) {}
   const seen = new Set();
   return groups.filter(g => { if (seen.has(g.prefix)) return false; seen.add(g.prefix); return true; });
 }
 
-function walkForArrays(obj, parentPrefix, groups) {
+function walkForArrays(obj, parentPrefix, groups, actualKey) {
   if (Array.isArray(obj)) {
     const fields = [];
     function collectFields(item) {
@@ -1276,21 +1276,21 @@ function walkForArrays(obj, parentPrefix, groups) {
     }
 
     // keyName = the JSON key this array lives under (last segment of parentPrefix)
-    const keyName = parentPrefix ? parentPrefix.split('_').pop() : '';
+    const keyName = actualKey || parentPrefix || '';
     if (prefix) groups.push({prefix, fields, keyName});
 
     // Recurse: pass full accumulated prefix so nested arrays get correct parent path
     for (const item of obj) {
       if (item && typeof item === 'object' && !Array.isArray(item)) {
         for (const [k, v] of Object.entries(item)) {
-          if (Array.isArray(v)) walkForArrays(v, prefix ? prefix+'_'+k : k, groups);
+          if (Array.isArray(v)) walkForArrays(v, prefix ? prefix+'_'+k : k, groups, k);
         }
       }
     }
   } else if (obj && typeof obj === 'object') {
     for (const [k, v] of Object.entries(obj)) {
-      if (Array.isArray(v)) walkForArrays(v, k, groups);
-      else if (v && typeof v === 'object') walkForArrays(v, parentPrefix, groups);
+        if (Array.isArray(v)) walkForArrays(v, k, groups, k);
+        else if (v && typeof v === 'object') walkForArrays(v, parentPrefix, groups, actualKey);
     }
   }
 }
@@ -1402,6 +1402,22 @@ function checkReady() {
 // ═══════════════════════════════════════════════════════════════
 // PAYLOAD BUILDER
 // ═══════════════════════════════════════════════════════════════
+function formatDate(date, fmt) {
+  const d = String(date.getUTCDate()).padStart(2,'0');
+  const m = String(date.getUTCMonth()+1).padStart(2,'0');
+  const y = date.getUTCFullYear();
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  switch(fmt) {
+    case 'YYYY-MM-DD':  return `${y}-${m}-${d}`;
+    case 'MM/DD/YYYY':  return `${m}/${d}/${y}`;
+    case 'DD/MM/YYYY':  return `${d}/${m}/${y}`;
+    case 'MM-DD-YYYY':  return `${m}-${d}-${y}`;
+    case 'YYYYMMDD':    return `${y}${m}${d}`;
+    case 'DD-MMM-YYYY': return `${d}-${months[date.getUTCMonth()]}-${y}`;
+    default:            return date.toISOString().slice(0,10);
+  }
+}
+
 function buildPayload(row) {
   const raw = document.getElementById('jed').value;
   const arrGroups = detectArrayGroups(raw);
@@ -1413,8 +1429,10 @@ function buildPayload(row) {
     if (arrVarSet.has(v)) continue;
     const m = S.maps[v];
     if (!m) continue;
-    const val = m.type==='const' ? m.value : (row[m.value]??null);
-    const rep = (val===null||val==='') ? 'null' : JSON.stringify(coerce(val));
+      const val = m.type==='const' ? m.value : (row[m.value]??null);
+      const fmt = document.getElementById('cfgDefaultDateFmt').value;
+      const resolvedVal = (fmt && val instanceof Date) ? formatDate(val, fmt) : val;
+      const rep = (resolvedVal===null||resolvedVal==='') ? 'null' : JSON.stringify(coerce(resolvedVal));
     tpl = tpl.replace(new RegExp('"{{'+escR(v)+'}}"', 'g'), rep);
     tpl = tpl.replace(new RegExp('{{'+escR(v)+'}}', 'g'), rep);
   }
@@ -1566,9 +1584,11 @@ function buildArraySection(tpl, rawFull, row, pfx, fields, keyName, arrGroups, p
         const sfx = f.varName.startsWith(pfx + '_') ? f.varName.slice(pfx.length + 1) : f.varName;
         const col = colBase + '_' + idx + '_' + sfx;
         const val = row[col] ?? null;
+        const fmt = document.getElementById('cfgDefaultDateFmt').value;
+        const resolvedVal = (fmt && val instanceof Date) ? formatDate(val, fmt) : val;
         if (fi === 0 && (val === null || val === '')) { firstFieldEmpty = true; break; }
         if (val !== null && val !== '') hasAnyVal = true;
-        const rep = (val === null || val === '') ? 'null' : JSON.stringify(coerce(val));
+        const rep = (resolvedVal === null || resolvedVal === '') ? 'null' : JSON.stringify(coerce(resolvedVal));
         itemTpl = itemTpl.replace(new RegExp('"{{' + escR(f.varName) + '}}"', 'g'), rep);
         itemTpl = itemTpl.replace(new RegExp('{{' + escR(f.varName) + '}}', 'g'), rep);
       }
