@@ -702,13 +702,13 @@ select option { background: var(--surface2); }
           <div class="field" style="max-width:260px;">
             <label>Default Date Format</label>
             <select id="cfgDefaultDateFmt">
-              <option value="">— not a date field —</option>
-              <option value="YYYY-MM-DD">YYYY-MM-DD (2024-01-31)</option>
-              <option value="MM/DD/YYYY">MM/DD/YYYY (01/31/2024)</option>
-              <option value="DD/MM/YYYY">DD/MM/YYYY (31/01/2024)</option>
-              <option value="MM-DD-YYYY">MM-DD-YYYY (01-31-2024)</option>
-              <option value="YYYYMMDD">YYYYMMDD (20240131)</option>
-              <option value="DD-MMM-YYYY">DD-MMM-YYYY (31-Jan-2024)</option>
+              <option value="">YYYY-MM-DD</option>
+              <option value="YYYY-MM-DD">YYYY/MM/DD</option>
+              <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+              <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+              <option value="MM-DD-YYYY">MM-DD-YYYY</option>
+              <option value="YYYYMMDD">YYYYMMDD</option>
+              <option value="DD-MMM-YYYY">DD-MMM-YYYY</option>
             </select>
           </div>
         </div>
@@ -1404,7 +1404,7 @@ function formatDate(date, fmt) {
     case 'MM-DD-YYYY':  return `${m}-${d}-${y}`;
     case 'YYYYMMDD':    return `${y}${m}${d}`;
     case 'DD-MMM-YYYY': return `${d}-${months[date.getMonth()]}-${y}`;
-    default: return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+    default:            return date.toISOString().slice(0,10);
   }
 }
 
