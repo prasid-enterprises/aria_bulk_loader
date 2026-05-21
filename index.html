@@ -696,21 +696,9 @@ select option { background: var(--surface2); }
         </div>
         <div id="validCfgBody" style="display:none;flex-direction:column;gap:10px;">
           <div style="font-size:11px;color:var(--text-mid);">
-            Mark mandatory fields (✱) and configure date format validation.
+            Mark mandatory fields (✱)
           </div>
           <div id="validFieldList" style="display:flex;flex-direction:column;gap:4px;max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r);padding:6px 8px;background:var(--surface2);"></div>
-          <div class="field" style="max-width:260px;">
-            <label>Default Date Format</label>
-            <select id="cfgDefaultDateFmt">
-              <option value="">YYYY-MM-DD</option>
-              <option value="YYYY-MM-DD">YYYY/MM/DD</option>
-              <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-              <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-              <option value="MM-DD-YYYY">MM-DD-YYYY</option>
-              <option value="YYYYMMDD">YYYYMMDD</option>
-              <option value="DD-MMM-YYYY">DD-MMM-YYYY</option>
-            </select>
-          </div>
         </div>
       </div>
     </div>
@@ -985,7 +973,7 @@ function loadFile(file) {
     try {
       const wb = ext === 'csv'
         ? XLSX.read(e.target.result, {type:'string'})
-        : XLSX.read(new Uint8Array(e.target.result), {type:'array', cellDates:true});
+        : XLSX.read(new Uint8Array(e.target.result), {type:'array', cellDates:false});
 
       S.sheets = {};
       for (const name of wb.SheetNames) {
@@ -1392,21 +1380,6 @@ function checkReady() {
 // ═══════════════════════════════════════════════════════════════
 // PAYLOAD BUILDER
 // ═══════════════════════════════════════════════════════════════
-function formatDate(date, fmt) {
-  const d = String(date.getDate()).padStart(2,'0');
-  const m = String(date.getMonth()+1).padStart(2,'0');
-  const y = date.getFullYear();
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  switch(fmt) {
-    case 'YYYY-MM-DD':  return `${y}-${m}-${d}`;
-    case 'MM/DD/YYYY':  return `${m}/${d}/${y}`;
-    case 'DD/MM/YYYY':  return `${d}/${m}/${y}`;
-    case 'MM-DD-YYYY':  return `${m}-${d}-${y}`;
-    case 'YYYYMMDD':    return `${y}${m}${d}`;
-    case 'DD-MMM-YYYY': return `${d}-${months[date.getMonth()]}-${y}`;
-    default:            return date.toISOString().slice(0,10);
-  }
-}
 
 function buildPayload(row) {
   const raw = document.getElementById('jed').value;
@@ -1420,9 +1393,7 @@ function buildPayload(row) {
     const m = S.maps[v];
     if (!m) continue;
       const val = m.type==='const' ? m.value : (row[m.value]??null);
-      const fmt = document.getElementById('cfgDefaultDateFmt').value;
-      const resolvedVal = (fmt && val instanceof Date) ? formatDate(val, fmt) : val;
-      const rep = (resolvedVal===null||resolvedVal==='') ? 'null' : JSON.stringify(coerce(resolvedVal));
+      const rep = (val===null||val==='') ? 'null' : JSON.stringify(coerce(val));
     tpl = tpl.replace(new RegExp('"{{'+escR(v)+'}}"', 'g'), rep);
     tpl = tpl.replace(new RegExp('{{'+escR(v)+'}}', 'g'), rep);
   }
@@ -1574,11 +1545,9 @@ function buildArraySection(tpl, rawFull, row, pfx, fields, keyName, arrGroups, p
         const sfx = f.varName.startsWith(pfx + '_') ? f.varName.slice(pfx.length + 1) : f.varName;
         const col = colBase + '_' + idx + '_' + sfx;
         const val = row[col] ?? null;
-        const fmt = document.getElementById('cfgDefaultDateFmt').value;
-        const resolvedVal = (fmt && val instanceof Date) ? formatDate(val, fmt) : val;
         if (fi === 0 && (val === null || val === '')) { firstFieldEmpty = true; break; }
         if (val !== null && val !== '') hasAnyVal = true;
-        const rep = (resolvedVal === null || resolvedVal === '') ? 'null' : JSON.stringify(coerce(resolvedVal));
+        const rep = (val === null || val === '') ? 'null' : JSON.stringify(coerce(val));
         itemTpl = itemTpl.replace(new RegExp('"{{' + escR(f.varName) + '}}"', 'g'), rep);
         itemTpl = itemTpl.replace(new RegExp('{{' + escR(f.varName) + '}}', 'g'), rep);
       }
@@ -2002,8 +1971,7 @@ function gatherCfg() {
     payload:  document.getElementById('jed').value,
     maps:     JSON.parse(JSON.stringify(S.maps)),
     idCols:   getSelectedIds(),
-    mandatoryFields: [...(S.mandatoryFields||new Set())],
-    defaultDateFmt: document.getElementById('cfgDefaultDateFmt')?.value||'',
+    mandatoryFields: [...(S.mandatoryFields||new Set())]
   };
 }
 
@@ -2017,8 +1985,6 @@ function applyCfg(cfg) {
   document.getElementById('cfgTimeout').value    = cfg.timeout||30000;
   document.getElementById('cfgConcurrency').value= cfg.concurr||3;
   document.getElementById('cfgOnFail').value     = cfg.onFail||'continue';
-  if (cfg.defaultDateFmt && document.getElementById('cfgDefaultDateFmt'))
-    document.getElementById('cfgDefaultDateFmt').value = cfg.defaultDateFmt;
   if (cfg.payload) { document.getElementById('jed').value=cfg.payload; onJedChange(); }
   if (cfg.maps) { S.maps=cfg.maps; renderMapper(); }
   if (cfg.mandatoryFields) S.mandatoryFields=new Set(cfg.mandatoryFields);
