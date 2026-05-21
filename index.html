@@ -1199,7 +1199,24 @@ function autoMap() {
         }
         return false;
       });
-      if (match) { S.maps[v]={type:'col',value:match}; n++; }
+      if (match) { S.maps[v]={type:'col',value:match}; n++; 
+      }
+      if (!matched) {
+        // Try to match array columns: e.g. var "schedule_schedule_no" should match col "schedule_0_schedule_no"
+        // Pattern: colBase_<idx>_fieldSuffix
+        const arrColMatch = S.cols.find(c => {
+          const m = c.match(/^(.+?)_(\d+)_(.+)$/);
+          if (!m) return false;
+          const [, colPfx, , colSfx] = m;
+          // var should equal colPfx + '_' + colSfx  OR  end with '_' + colSfx
+          return v === colPfx + '_' + colSfx || v.endsWith('_' + colSfx);
+        });
+        if (arrColMatch) {
+          S.maps[v] = {type: 'col', value: arrColMatch};
+          n++;
+          matched = true;
+        }
+      }
     }
   }
   renderMapper();
@@ -1238,6 +1255,20 @@ function walkForArrays(obj, parentPrefix, groups, actualKey) {
       }
     }
     for (const item of obj) collectFields(item);
+
+    // Check if items are scalars (strings that are __VS:/__VR: placeholders)
+    const isScalarArray = obj.length > 0 && (typeof obj[0] !== 'object' || obj[0] === null);
+    if (isScalarArray) {
+      for (const item of obj) {
+        if (typeof item === 'string') {
+          let vn = null;
+          if (item.startsWith('__VS:')) vn = item.slice(5, -2);
+          else if (item.startsWith('__VR:')) vn = item.slice(5, -2);
+          // fieldKey = null or index (use parentPrefix as varName stem)
+          if (vn && !fields.find(f => f.varName === vn)) fields.push({fieldKey: null, varName: vn, isScalar: true});
+        }
+      }
+    }
 
     // Derive prefix from variable names if possible, else use parentPrefix
     let prefix = parentPrefix;
@@ -1450,6 +1481,13 @@ function _findArrayBlockByVar(str, varName) {
   return { start: bStart, end: bEnd };
 }
 
+function _extractFirstScalar(str, block) {
+  // Returns the first scalar item template string from e.g. ["{{tag_0}}", ...]
+  const ac = str.slice(block.start + 1, block.end); // content between [ and ]
+  const m = ac.match(/^\s*("{{[\w.]+}}"|\{{[\w.]+}})/);
+  return m ? m[1].trim() : null;
+}
+
 // Extract the first complete {...} object from an array block
 function _extractFirstObject(str, block) {
   const ac = str.slice(block.start, block.end + 1);
@@ -1499,7 +1537,7 @@ function buildArraySection(tpl, rawFull, row, pfx, fields, keyName, arrGroups, p
   // Use var-based lookup first (exact position) to avoid key-name collisions
   // e.g. two arrays both named "schedule" at different nesting levels
   const replaceBlock = (src, repl) => {
-    if (fields.length > 0) {
+    if (fields.length > 0 && !fields[0].isScalar) {
       const blk = _findArrayBlockByVar(src, fields[0].varName);
       if (blk) return src.slice(0, blk.start) + repl + src.slice(blk.end + 1);
     }
@@ -1530,12 +1568,26 @@ function buildArraySection(tpl, rawFull, row, pfx, fields, keyName, arrGroups, p
     const blk = _findArrayBlockByKey(rawFull, keyName);
     itemTplStr = blk ? _extractFirstObject(rawFull, blk) : null;
   }
+  if (!itemTplStr && fields.length > 0 && fields[0].isScalar) {
+    const blk = _findArrayBlockByKey(rawFull, keyName);
+    if (blk) itemTplStr = _extractFirstScalar(rawFull, blk);
+  }
   if (!itemTplStr) return tpl;
 
   const items = [];
   for (let idx = 0; idx <= maxIdx; idx++) {
     let itemTpl = itemTplStr;
     let hasAnyVal = true;
+
+    // For scalar arrays, the column naming is: pfx_0, pfx_1, pfx_2 (no _field suffix)
+    if (fields.length > 0 && fields[0].isScalar) {
+      const col = colBase + '_' + idx;
+      const val = row[col] ?? null;
+      if (val === null || val === '') break; // stop on first empty
+      const rep = JSON.stringify(coerce(val));
+      items.push(rep);
+      continue; // skip normal object substitution
+    }
 
     if (fields.length > 0) {
       let firstFieldEmpty = false;
