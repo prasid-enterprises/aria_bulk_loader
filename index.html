@@ -1520,6 +1520,9 @@ function buildArraySection(tpl, rawFull, row, pfx, fields, keyName, arrGroups, p
 
   // Count items: from direct field columns or child array columns
   let maxIdx = -1;
+    const allConst = fields.length > 0 && fields.every(f => S.maps[f.varName]?.type === 'const');
+  if (allConst) { maxIdx = 0; }
+  else {
   if (fields.length > 0) {
     for (const col of Object.keys(row)) {
       const m = col.match(new RegExp('^' + escR(colBase) + '_(\\d+)(?:_|$)'));
@@ -1531,6 +1534,7 @@ function buildArraySection(tpl, rawFull, row, pfx, fields, keyName, arrGroups, p
       const m = col.match(new RegExp('^' + escR(colBase) + '_(\\d+)_'));
       if (m) maxIdx = Math.max(maxIdx, parseInt(m[1]));
     }
+  }
   }
 
   // Replace this array's block in src with repl
@@ -1596,7 +1600,8 @@ function buildArraySection(tpl, rawFull, row, pfx, fields, keyName, arrGroups, p
         const f = fields[fi];
         const sfx = f.varName.startsWith(pfx + '_') ? f.varName.slice(pfx.length + 1) : f.varName;
         const col = colBase + '_' + idx + '_' + sfx;
-        const val = row[col] ?? null;
+        const _m = S.maps[f.varName];
+        const val = _m && _m.type === 'const' ? _m.value : (row[col] ?? null);
         if (fi === 0 && (val === null || val === '')) { firstFieldEmpty = true; break; }
         if (val !== null && val !== '') hasAnyVal = true;
         const rep = (val === null || val === '') ? 'null' : JSON.stringify(coerce(val));
